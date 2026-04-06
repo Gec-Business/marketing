@@ -83,7 +83,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const pdfBytes = await pdf.save();
 
-  return new NextResponse(pdfBytes, {
+  return new NextResponse(Buffer.from(pdfBytes), {
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${inv.invoice_number}.pdf"`,
