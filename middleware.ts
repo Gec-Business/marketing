@@ -3,7 +3,7 @@ import { getIronSession } from 'iron-session';
 import type { SessionData } from '@/lib/types';
 
 export async function middleware(req: NextRequest) {
-  const session = await getIronSession<SessionData>(req.cookies, {
+  const session = await getIronSession<SessionData>(req.cookies as any, {
     password: process.env.SESSION_SECRET!,
     cookieName: 'mk-session',
   });
