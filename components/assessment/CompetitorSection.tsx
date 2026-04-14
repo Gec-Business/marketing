@@ -1,6 +1,7 @@
 'use client';
 
 import SubBlockRerun from './SubBlockRerun';
+import CompetitorEditor from './CompetitorEditor';
 
 export default function CompetitorSection({ data, assessmentId, onRefresh }: { data: any; assessmentId?: string; onRefresh?: () => void }) {
   if (!data) return null;
@@ -45,6 +46,20 @@ export default function CompetitorSection({ data, assessmentId, onRefresh }: { d
               </div>
             ))}
           </div>
+
+          {/* Manual competitor management */}
+          {assessmentId && onRefresh && (
+            <CompetitorEditor assessmentId={assessmentId} competitors={competitors} onUpdate={onRefresh} />
+          )}
+        </div>
+      )}
+
+      {/* Add competitors section if none exist */}
+      {competitors.length === 0 && assessmentId && onRefresh && (
+        <div className="bg-white rounded-xl p-6 shadow-sm">
+          <h3 className="font-semibold text-lg mb-4">Competitors</h3>
+          <p className="text-gray-500 text-sm mb-4">No competitors found. Add manually or re-run the competitor analysis.</p>
+          <CompetitorEditor assessmentId={assessmentId} competitors={[]} onUpdate={onRefresh} />
         </div>
       )}
 

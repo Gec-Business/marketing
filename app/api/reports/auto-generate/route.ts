@@ -100,6 +100,21 @@ export async function POST(req: NextRequest) {
         [tenant.id]
       );
 
+      // Aggregate engagement metrics from published posts
+      const engagementRow = await queryOne<{ total_likes: string; total_comments: string; total_shares: string }>(
+        `SELECT
+           COALESCE(SUM((value->>'likes')::int), 0) as total_likes,
+           COALESCE(SUM((value->>'comments')::int), 0) as total_comments,
+           COALESCE(SUM((value->>'shares')::int), 0) as total_shares
+         FROM posts,
+           jsonb_each(publish_results) AS pr(key, value)
+         WHERE tenant_id = $1
+           AND status IN ('posted','partially_posted')
+           AND tenant_approved_at BETWEEN $2 AND $3
+           AND value ? 'engagement'`,
+        [tenant.id, `${periodStartStr} 00:00:00`, `${periodEndStr} 23:59:59`]
+      );
+
       const data = {
         posts_published: parseInt(stats?.posts_published || '0', 10),
         posts_scheduled: parseInt(stats?.posts_scheduled || '0', 10),
@@ -107,6 +122,11 @@ export async function POST(req: NextRequest) {
         posts_drafts: parseInt(stats?.posts_drafts || '0', 10),
         platforms_active: platformsRow.map((r) => r.platform),
         upcoming_posts: upcoming,
+        engagement: {
+          total_likes: parseInt(engagementRow?.total_likes || '0', 10),
+          total_comments: parseInt(engagementRow?.total_comments || '0', 10),
+          total_shares: parseInt(engagementRow?.total_shares || '0', 10),
+        },
         summary: `${stats?.posts_published || 0} posts published this ${reportType === 'weekly' ? 'week' : 'month'}.`,
       };
 

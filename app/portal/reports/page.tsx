@@ -74,6 +74,23 @@ export default function PortalReportsPage() {
               </div>
             </div>
 
+            {selected.data.engagement && (selected.data.engagement.total_likes > 0 || selected.data.engagement.total_comments > 0 || selected.data.engagement.total_shares > 0) && (
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                <div className="bg-pink-50 rounded-lg p-3">
+                  <p className="text-2xl font-bold text-pink-700">{selected.data.engagement.total_likes}</p>
+                  <p className="text-xs text-gray-500">Likes</p>
+                </div>
+                <div className="bg-blue-50 rounded-lg p-3">
+                  <p className="text-2xl font-bold text-blue-700">{selected.data.engagement.total_comments}</p>
+                  <p className="text-xs text-gray-500">Comments</p>
+                </div>
+                <div className="bg-teal-50 rounded-lg p-3">
+                  <p className="text-2xl font-bold text-teal-700">{selected.data.engagement.total_shares}</p>
+                  <p className="text-xs text-gray-500">Shares</p>
+                </div>
+              </div>
+            )}
+
             {selected.data.platforms_active?.length > 0 && (
               <div className="mb-6">
                 <h3 className="text-sm font-medium text-gray-700 mb-2">Active Platforms</h3>
