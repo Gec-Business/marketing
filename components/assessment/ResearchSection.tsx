@@ -29,7 +29,7 @@ export default function ResearchSection({ data, assessmentId, onRefresh }: { dat
 
       {/* Online Presence */}
       <div className="bg-white rounded-xl p-6 shadow-sm">
-        <h3 className="font-semibold text-lg mb-4">Online Presence</h3>
+        <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-lg">Online Presence</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="research_data" block="online_presence" label="Online Presence" onComplete={onRefresh} />}</div>
         <div className="grid grid-cols-2 gap-4">
           {op.website_status && <InfoItem label="Website" value={op.website_status} />}
           {op.social_media && typeof op.social_media === 'object' && (
@@ -66,7 +66,7 @@ export default function ResearchSection({ data, assessmentId, onRefresh }: { dat
             </div>
           )}
           <div className="bg-white rounded-xl p-6 shadow-sm">
-            <h3 className="font-semibold text-lg mb-3">Review Sentiment</h3>
+            <div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-lg">Review Sentiment</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="research_data" block="review_sentiment" label="Sentiment" onComplete={onRefresh} />}</div>
             {sentiment.overall_sentiment && <p className="text-sm mb-3"><span className="font-medium">Overall:</span> <span className={sentiment.overall_sentiment === 'positive' ? 'text-green-600' : sentiment.overall_sentiment === 'negative' ? 'text-red-600' : 'text-yellow-600'}>{sentiment.overall_sentiment}</span></p>}
             {sentiment.positive_themes?.length > 0 && (
               <div className="mb-2">
@@ -104,7 +104,7 @@ export default function ResearchSection({ data, assessmentId, onRefresh }: { dat
       {/* Key Observations */}
       {observations.length > 0 && (
         <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="font-semibold text-lg mb-3">Key Observations</h3>
+          <div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-lg">Key Observations</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="research_data" block="initial_observations" label="Observations" onComplete={onRefresh} />}</div>
           <ul className="space-y-2">
             {observations.map((obs: string, i: number) => (
               <li key={i} className="flex gap-2 text-sm">

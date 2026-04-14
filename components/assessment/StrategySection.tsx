@@ -35,7 +35,7 @@ export default function StrategySection({ data, assessmentId, onRefresh }: { dat
       {/* Strategic Pillars */}
       {framework.strategic_pillars?.length > 0 && (
         <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="font-semibold text-lg mb-4">Strategic Pillars</h3>
+          <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-lg">Strategic Pillars</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="strategy_data" block="strategic_framework" label="Pillars" onComplete={onRefresh} />}</div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {framework.strategic_pillars.map((p: any, i: number) => (
               <div key={i} className="bg-gray-50 rounded-lg p-4 border-t-4 border-blue-500">
@@ -81,7 +81,7 @@ export default function StrategySection({ data, assessmentId, onRefresh }: { dat
       {/* Content Pillars */}
       {messaging.content_pillars?.length > 0 && (
         <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="font-semibold text-lg mb-4">Content Pillars</h3>
+          <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-lg">Content Pillars</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="strategy_data" block="messaging_strategy" label="Content Pillars" onComplete={onRefresh} />}</div>
           <div className="space-y-3">
             {messaging.content_pillars.map((p: any, i: number) => (
               <div key={i} className="flex items-center gap-4">
@@ -102,7 +102,7 @@ export default function StrategySection({ data, assessmentId, onRefresh }: { dat
       {/* Hashtag Strategy */}
       {messaging.hashtag_strategy && (
         <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="font-semibold text-lg mb-3">Hashtag Strategy</h3>
+          <div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-lg">Hashtag Strategy</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="strategy_data" block="messaging_strategy" label="Hashtags" onComplete={onRefresh} />}</div>
           <div className="grid grid-cols-3 gap-4">
             {messaging.hashtag_strategy.branded?.length > 0 && (
               <div>

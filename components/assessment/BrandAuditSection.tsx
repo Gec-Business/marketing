@@ -49,7 +49,7 @@ export default function BrandAuditSection({ data, assessmentId, onRefresh }: { d
       {/* SWOT Analysis */}
       {(swot.strengths?.length > 0 || swot.weaknesses?.length > 0 || swot.opportunities?.length > 0 || swot.threats?.length > 0) && (
         <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="font-semibold text-lg mb-4">SWOT Analysis</h3>
+          <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-lg">SWOT Analysis</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="brand_audit" block="swot" label="SWOT" onComplete={onRefresh} />}</div>
           <div className="grid grid-cols-2 gap-3">
             <SwotQuadrant title="Strengths" items={swot.strengths} color="green" />
             <SwotQuadrant title="Weaknesses" items={swot.weaknesses} color="red" />
@@ -62,7 +62,7 @@ export default function BrandAuditSection({ data, assessmentId, onRefresh }: { d
       {/* Kapferer Prism */}
       {Object.keys(prism).length > 0 && (
         <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="font-semibold text-lg mb-4">Brand Identity Prism</h3>
+          <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-lg">Brand Identity Prism</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="brand_audit" block="kapferer_prism" label="Prism" onComplete={onRefresh} />}</div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {Object.entries(prism).map(([key, val]) => (
               <div key={key} className="bg-gray-50 rounded-lg p-3">
@@ -78,7 +78,7 @@ export default function BrandAuditSection({ data, assessmentId, onRefresh }: { d
       <div className="grid grid-cols-2 gap-4">
         {reputation.score !== undefined && (
           <div className="bg-white rounded-xl p-6 shadow-sm text-center">
-            <h3 className="font-semibold text-lg mb-3">Online Reputation</h3>
+            <div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-lg">Online Reputation</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="brand_audit" block="online_reputation_score" label="Reputation" onComplete={onRefresh} />}</div>
             <p className="text-5xl font-bold" style={{ color: reputation.score >= 70 ? '#16a34a' : reputation.score >= 40 ? '#ca8a04' : '#dc2626' }}>
               {reputation.score}<span className="text-lg text-gray-400">/{reputation.max || 100}</span>
             </p>
@@ -86,7 +86,7 @@ export default function BrandAuditSection({ data, assessmentId, onRefresh }: { d
         )}
         {socialAudit.content_quality_score !== undefined && (
           <div className="bg-white rounded-xl p-6 shadow-sm text-center">
-            <h3 className="font-semibold text-lg mb-3">Content Quality</h3>
+            <div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-lg">Content Quality</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="brand_audit" block="social_media_audit" label="Content Quality" onComplete={onRefresh} />}</div>
             <p className="text-5xl font-bold" style={{ color: socialAudit.content_quality_score >= 70 ? '#16a34a' : socialAudit.content_quality_score >= 40 ? '#ca8a04' : '#dc2626' }}>
               {socialAudit.content_quality_score}<span className="text-lg text-gray-400">/100</span>
             </p>
@@ -98,7 +98,7 @@ export default function BrandAuditSection({ data, assessmentId, onRefresh }: { d
       {/* Priority Actions */}
       {actions.length > 0 && (
         <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="font-semibold text-lg mb-4">Priority Actions</h3>
+          <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-lg">Priority Actions</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="brand_audit" block="priority_actions" label="Actions" onComplete={onRefresh} />}</div>
           <div className="space-y-3">
             {actions.map((a: any, i: number) => (
               <div key={i} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
@@ -120,7 +120,7 @@ export default function BrandAuditSection({ data, assessmentId, onRefresh }: { d
       {/* Key Findings */}
       {findings.length > 0 && (
         <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="font-semibold text-lg mb-3">Key Findings</h3>
+          <div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-lg">Key Findings</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="brand_audit" block="key_findings" label="Findings" onComplete={onRefresh} />}</div>
           <ul className="space-y-2">
             {findings.map((f: string, i: number) => (
               <li key={i} className="flex gap-2 text-sm"><span className="text-blue-500">&#8226;</span><span>{f}</span></li>

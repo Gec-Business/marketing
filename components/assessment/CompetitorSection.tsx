@@ -76,7 +76,7 @@ export default function CompetitorSection({ data, assessmentId, onRefresh }: { d
       <div className="grid grid-cols-2 gap-4">
         {threats.length > 0 && (
           <div className="bg-white rounded-xl p-6 shadow-sm">
-            <h3 className="font-semibold text-lg mb-3">Threats</h3>
+            <div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-lg">Threats</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="competitor_data" block="competitive_threats" label="Threats" onComplete={onRefresh} />}</div>
             <div className="space-y-2">
               {threats.map((t: any, i: number) => (
                 <div key={i} className="flex items-start gap-2">
@@ -91,7 +91,7 @@ export default function CompetitorSection({ data, assessmentId, onRefresh }: { d
         )}
         {opportunities.length > 0 && (
           <div className="bg-white rounded-xl p-6 shadow-sm">
-            <h3 className="font-semibold text-lg mb-3">Opportunities</h3>
+            <div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-lg">Opportunities</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="competitor_data" block="opportunities" label="Opportunities" onComplete={onRefresh} />}</div>
             <ul className="space-y-2">
               {opportunities.map((o: string, i: number) => (
                 <li key={i} className="flex gap-2 text-sm">
