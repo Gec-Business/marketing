@@ -3,6 +3,7 @@ import { requireOperator, requireUser } from '@/lib/auth';
 import { query, queryOne } from '@/lib/db';
 import { generateContentBatch } from '@/lib/ai/content-generator';
 import { generatePostImage } from '@/lib/images/generator';
+import { getApiKeysForTenant } from '@/lib/api-keys';
 import { v4 as uuid } from 'uuid';
 import type { Tenant, Assessment } from '@/lib/types';
 
@@ -51,7 +52,9 @@ export async function POST(req: NextRequest) {
   );
   if (!assessment) return NextResponse.json({ error: 'No approved assessment found. Run and approve an assessment first.' }, { status: 400 });
 
-  const { posts: generated, tokensUsed } = await generateContentBatch(tenant, assessment, count || tenant.posts_per_week, week_start);
+  const safeCount = Math.min(Math.max(count || tenant.posts_per_week, 1), 30);
+  const apiKeys = await getApiKeysForTenant(tenant_id);
+  const { posts: generated, tokensUsed } = await generateContentBatch(tenant, assessment, safeCount, week_start, apiKeys.anthropic);
 
   if (generated.length === 0) {
     return NextResponse.json({ error: 'Content generation returned no posts' }, { status: 500 });
@@ -59,15 +62,21 @@ export async function POST(req: NextRequest) {
 
   const batchId = uuid();
   const createdPosts = [];
+  let imagesGenerated = 0;
 
   for (const post of generated) {
     let generatedImageUrl = null;
     if (generate_images && post.visual_description && post.content_type === 'image_post') {
-      try {
-        const { url } = await generatePostImage(tenant_id, post.visual_description, tenant.brand_config);
-        generatedImageUrl = url;
-      } catch (e) {
-        console.error('Image generation failed:', e);
+      if (!apiKeys.openai) {
+        console.warn('Skipping image generation: no OpenAI API key configured (tenant/operator/global all empty)');
+      } else {
+        try {
+          const { url } = await generatePostImage(tenant_id, post.visual_description, tenant.brand_config, apiKeys.openai);
+          generatedImageUrl = url;
+          imagesGenerated++;
+        } catch (e) {
+          console.error('Image generation failed:', e);
+        }
       }
     }
 
@@ -94,11 +103,17 @@ export async function POST(req: NextRequest) {
     createdPosts.push(created);
   }
 
-  const aiCost = (tokensUsed / 1_000_000) * 5;
+  // Claude Sonnet 4.6 pricing: $3/1M input, $15/1M output
+  const estInputTokens = Math.round(tokensUsed * 0.3);
+  const estOutputTokens = tokensUsed - estInputTokens;
+  const claudeCost = (estInputTokens / 1_000_000) * 3 + (estOutputTokens / 1_000_000) * 15;
+  const imageCost = imagesGenerated * 0.04;
+  const totalCost = claudeCost + imageCost;
+  const billedTo = apiKeys.source.anthropic === 'tenant' ? 'tenant' : apiKeys.source.anthropic === 'operator' ? 'operator' : 'gec';
   await query(
-    `INSERT INTO cost_tracking (tenant_id, category, description, amount_usd, tokens_used) VALUES ($1, 'ai_content', $2, $3, $4)`,
-    [tenant_id, `Generated ${generated.length} posts`, aiCost, tokensUsed]
+    `INSERT INTO cost_tracking (tenant_id, category, description, amount_usd, tokens_used, billed_to) VALUES ($1, 'ai_content', $2, $3, $4, $5)`,
+    [tenant_id, `Generated ${generated.length} posts (${imagesGenerated} images)`, totalCost, tokensUsed, billedTo]
   );
 
-  return NextResponse.json({ posts: createdPosts, batchId, tokensUsed, count: createdPosts.length });
+  return NextResponse.json({ posts: createdPosts, batchId, tokensUsed, count: createdPosts.length, imagesGenerated });
 }

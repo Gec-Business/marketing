@@ -3,13 +3,24 @@ import { query } from '../db';
 import fs from 'fs/promises';
 import path from 'path';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let globalOpenai: OpenAI | null = null;
+
+function getOpenAIClient(apiKey?: string): OpenAI {
+  if (apiKey) return new OpenAI({ apiKey });
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('No OpenAI API key configured (none provided, none in env)');
+  }
+  if (!globalOpenai) globalOpenai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return globalOpenai;
+}
 
 export async function generatePostImage(
   tenantId: string,
   description: string,
-  brandConfig: Record<string, unknown>
+  brandConfig: Record<string, unknown>,
+  apiKey?: string
 ): Promise<{ url: string; localPath: string; cost: number }> {
+  const openai = getOpenAIClient(apiKey);
   const prompt = `${description}. Style: professional social media post, clean modern design. ${brandConfig.colors ? `Brand colors: ${brandConfig.colors}` : ''}`.slice(0, 4000);
 
   const response = await openai.images.generate({
@@ -34,11 +45,8 @@ export async function generatePostImage(
   await fs.writeFile(filePath, buffer);
 
   const cost = 0.04;
-
-  await query(
-    `INSERT INTO cost_tracking (tenant_id, category, description, amount_usd) VALUES ($1, 'ai_images', 'Generated post image', $2)`,
-    [tenantId, cost]
-  );
+  // Note: cost tracking is done by the caller (content route) so it can be aggregated
+  // and properly attributed via billed_to. This function only returns the cost.
 
   return { url: `/uploads/generated/${filename}`, localPath: filePath, cost };
 }

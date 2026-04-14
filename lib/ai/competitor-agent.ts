@@ -1,20 +1,27 @@
 import { askClaude } from './client';
+import { sanitizeTenantForPrompt } from './sanitize';
 import type { Tenant } from '../types';
 
 export async function runCompetitorAgent(
   tenant: Tenant,
-  researchData: Record<string, unknown>
+  researchData: Record<string, unknown>,
+  apiKey?: string
 ): Promise<{ data: Record<string, unknown>; tokensUsed: number }> {
-  const systemPrompt = `You are a competitive analysis agent for social media marketing. Analyze the competitive landscape for the given business. Use your knowledge of the ${tenant.city} market in ${tenant.country}. Return ONLY valid JSON — no markdown, no code fences.`;
+  const safe = sanitizeTenantForPrompt(tenant);
+
+  const systemPrompt = `You are a competitive analysis agent for social media marketing. Analyze the competitive landscape for the given business. Use your knowledge of the ${safe.city} market in ${safe.country}. Return ONLY valid JSON — no markdown, no code fences.`;
+
+  const researchContext = (researchData as any).parse_error
+    ? `Research data was not fully parsed. Raw summary available but may be incomplete.`
+    : `Research data:\n${JSON.stringify(researchData, null, 2)}`;
 
   const userPrompt = `Analyze competitors for:
 
-Business: ${tenant.name}
-Industry: ${tenant.industry}
-City: ${tenant.city}, ${tenant.country}
+Business: ${safe.name}
+Industry: ${safe.industry}
+City: ${safe.city}, ${safe.country}
 
-Research data:
-${JSON.stringify(researchData, null, 2)}
+${researchContext}
 
 Generate JSON:
 {
@@ -49,7 +56,7 @@ Generate JSON:
 
 Include 8-12 competitors.`;
 
-  const { text, tokensUsed } = await askClaude(systemPrompt, userPrompt, { maxTokens: 6144 });
+  const { text, tokensUsed } = await askClaude(systemPrompt, userPrompt, { maxTokens: 6144, apiKey });
 
   try {
     const cleaned = text.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');

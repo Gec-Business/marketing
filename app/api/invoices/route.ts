@@ -11,6 +11,9 @@ export async function GET(req: NextRequest) {
   let idx = 1;
 
   if (user.role === 'tenant') {
+    if (tenantId && tenantId !== user.tenant_id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     sql += ` AND i.tenant_id = $${idx}`;
     params.push(user.tenant_id);
     idx++;
@@ -33,9 +36,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
-  const count = await queryOne('SELECT COUNT(*) as count FROM invoices');
-  const num = parseInt((count as any).count) + 1;
-  const invoiceNumber = `MK-${new Date().getFullYear()}-${String(num).padStart(4, '0')}`;
+  const year = new Date().getFullYear();
+  const seq = await queryOne<{ nextval: string }>(`SELECT nextval('invoice_number_seq') AS nextval`);
+  const num = parseInt(seq?.nextval || '1', 10);
+  const invoiceNumber = `MK-${year}-${String(num).padStart(4, '0')}`;
 
   const invoice = await queryOne(
     `INSERT INTO invoices (tenant_id, invoice_number, period_start, period_end, items, total_amount, currency, due_date, notes)

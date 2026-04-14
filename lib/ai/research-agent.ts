@@ -1,7 +1,8 @@
 import { askClaude } from './client';
+import { sanitizeTenantForPrompt, sanitizeForPrompt } from './sanitize';
 import type { Tenant } from '../types';
 
-export async function runResearchAgent(tenant: Tenant): Promise<{ data: Record<string, unknown>; tokensUsed: number }> {
+export async function runResearchAgent(tenant: Tenant, apiKey?: string): Promise<{ data: Record<string, unknown>; tokensUsed: number }> {
   let totalTokens = 0;
   let googleMapsData = null;
 
@@ -12,6 +13,7 @@ export async function runResearchAgent(tenant: Tenant): Promise<{ data: Record<s
         const res = await fetch(
           `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,rating,user_ratings_total,formatted_address,opening_hours,reviews,price_level,types,website,formatted_phone_number&key=${process.env.GOOGLE_MAPS_API_KEY}`
         );
+        if (!res.ok) throw new Error(`Google Maps API error: ${res.status}`);
         const data = await res.json();
         if (data.result) googleMapsData = data.result;
       }
@@ -22,13 +24,15 @@ export async function runResearchAgent(tenant: Tenant): Promise<{ data: Record<s
 
   const systemPrompt = `You are a marketing research agent. Analyze the business information provided and generate a comprehensive research profile. Return ONLY valid JSON — no markdown, no code fences.`;
 
+  const safe = sanitizeTenantForPrompt(tenant);
+
   const userPrompt = `Analyze this business for a social media marketing strategy:
 
-Business: ${tenant.name}
-Industry: ${tenant.industry}
-City: ${tenant.city}, ${tenant.country}
-Website: ${tenant.website || 'none'}
-Description: ${tenant.description || 'none'}
+Business: ${safe.name}
+Industry: ${safe.industry}
+City: ${safe.city}, ${safe.country}
+Website: ${safe.website || 'none'}
+Description: ${safe.description || 'none'}
 
 Social Media Presence:
 ${JSON.stringify(tenant.social_links, null, 2)}
@@ -50,7 +54,7 @@ Generate a JSON research profile:
   "initial_observations": []
 }`;
 
-  const { text, tokensUsed } = await askClaude(systemPrompt, userPrompt, { maxTokens: 4096 });
+  const { text, tokensUsed } = await askClaude(systemPrompt, userPrompt, { maxTokens: 4096, apiKey });
   totalTokens += tokensUsed;
 
   try {

@@ -34,9 +34,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Post not ready for tenant approval' }, { status: 400 });
     }
     if (action === 'approve') {
+      // If a publish date is already set, schedule it for auto-publish.
+      // Otherwise, mark as tenant_approved (waiting for Tea to set a date).
+      const newStatus = p.scheduled_at ? 'scheduled' : 'tenant_approved';
       const updated = await queryOne(
-        `UPDATE posts SET status = 'scheduled', tenant_approved_at = now() WHERE id = $1 RETURNING *`,
-        [id]
+        `UPDATE posts SET status = $1, tenant_approved_at = now() WHERE id = $2 RETURNING *`,
+        [newStatus, id]
       );
       return NextResponse.json({ post: updated });
     }

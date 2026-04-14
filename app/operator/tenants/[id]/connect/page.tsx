@@ -4,23 +4,33 @@ import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 
 const PLATFORMS = [
-  { id: 'facebook', label: 'Facebook + Instagram', color: '#1877F2', desc: 'Connects both Facebook Page and Instagram Business' },
-  { id: 'linkedin', label: 'LinkedIn', color: '#0A66C2', desc: 'Company page posting' },
-  { id: 'tiktok', label: 'TikTok', color: '#000000', desc: 'Video and photo posting' },
+  { id: 'facebook', label: 'Facebook + Instagram', color: '#1877F2', desc: 'Connects both Facebook Page and Instagram Business', connectsAlso: 'instagram' },
+  { id: 'linkedin', label: 'LinkedIn', color: '#0A66C2', desc: 'Company page posting', connectsAlso: null },
+  { id: 'tiktok', label: 'TikTok', color: '#000000', desc: 'Video and photo posting', connectsAlso: null },
 ];
 
 export default function ConnectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const [connections, setConnections] = useState<any[]>([]);
+  const [connections, setConnections] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { fetchConnections(); }, []);
 
   async function fetchConnections() {
-    const res = await fetch(`/api/tenants/${id}`);
-    const data = await res.json();
-    // For now, just check social_connections
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/tenants/${id}/connections`);
+      if (!res.ok) throw new Error('Failed to fetch');
+      const data = await res.json();
+      const connMap: Record<string, any> = {};
+      for (const conn of data.connections || []) {
+        connMap[conn.platform] = conn;
+      }
+      setConnections(connMap);
+    } catch (e) {
+      console.error('Fetch connections error:', e);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function connectPlatform(platform: string) {
@@ -29,7 +39,16 @@ export default function ConnectPage({ params }: { params: Promise<{ id: string }
       : platform === 'linkedin'
       ? `/api/connect/linkedin?tenant_id=${id}`
       : `/api/connect/tiktok?tenant_id=${id}`;
-    window.open(url, '_blank', 'width=600,height=700');
+
+    const popup = window.open(url, '_blank', 'width=600,height=700');
+
+    // Refresh connections when popup closes
+    const timer = setInterval(() => {
+      if (popup?.closed) {
+        clearInterval(timer);
+        fetchConnections();
+      }
+    }, 1000);
   }
 
   return (
@@ -40,20 +59,44 @@ export default function ConnectPage({ params }: { params: Promise<{ id: string }
       </div>
 
       <div className="space-y-4">
-        {PLATFORMS.map((p) => (
-          <div key={p.id} className="bg-white rounded-xl p-5 shadow-sm flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold" style={{ color: p.color }}>{p.label}</h3>
-              <p className="text-sm text-gray-500">{p.desc}</p>
+        {PLATFORMS.map((p) => {
+          const conn = connections[p.id];
+          const isConnected = conn?.status === 'active';
+          const isExpired = conn?.expires_at && new Date(conn.expires_at) < new Date();
+
+          return (
+            <div key={p.id} className="bg-white rounded-xl p-5 shadow-sm flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold" style={{ color: p.color }}>{p.label}</h3>
+                  {isConnected && !isExpired && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">Connected</span>
+                  )}
+                  {isExpired && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">Expired</span>
+                  )}
+                  {!conn && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Not connected</span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-500">{p.desc}</p>
+                {conn?.connected_at && (
+                  <p className="text-xs text-gray-400 mt-1">Connected: {new Date(conn.connected_at).toLocaleDateString()}</p>
+                )}
+              </div>
+              <button
+                onClick={() => connectPlatform(p.id)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  isConnected && !isExpired
+                    ? 'border border-gray-300 text-gray-600 hover:bg-gray-50'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                {isConnected && !isExpired ? 'Reconnect' : 'Connect'}
+              </button>
             </div>
-            <button
-              onClick={() => connectPlatform(p.id)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
-            >
-              Connect
-            </button>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <p className="text-xs text-gray-400 mt-6">

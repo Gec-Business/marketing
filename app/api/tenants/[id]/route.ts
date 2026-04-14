@@ -18,7 +18,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const values: unknown[] = [];
   let idx = 1;
 
-  const allowed = ['name', 'industry', 'description', 'city', 'website', 'google_maps_url', 'social_links', 'brand_config', 'channels', 'posting_frequency', 'posts_per_week', 'video_ideas_per_month', 'primary_language', 'secondary_language', 'status', 'onboarding_data'];
+  const allowed = ['name', 'industry', 'description', 'city', 'website', 'google_maps_url', 'social_links', 'brand_config', 'channels', 'posting_frequency', 'posts_per_week', 'video_ideas_per_month', 'primary_language', 'secondary_language', 'status', 'onboarding_data', 'monthly_fee', 'billing_currency', 'billing_start_date', 'billing_duration_months', 'billing_day', 'auto_invoice', 'auto_reports', 'ad_management_fee_pct', 'ads_enabled', 'monthly_ad_budget_cap'];
 
   for (const key of allowed) {
     if (body[key] !== undefined) {

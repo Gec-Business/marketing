@@ -9,19 +9,30 @@ export default function InvoicesPage() {
   useEffect(() => { fetchInvoices(); }, []);
 
   async function fetchInvoices() {
-    const res = await fetch('/api/invoices');
-    const data = await res.json();
-    setInvoices(data.invoices || []);
-    setLoading(false);
+    try {
+      const res = await fetch('/api/invoices');
+      if (!res.ok) throw new Error('Failed to fetch invoices');
+      const data = await res.json();
+      setInvoices(data.invoices || []);
+    } catch (e) {
+      console.error('Fetch invoices error:', e);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function markPaid(id: string) {
-    await fetch(`/api/invoices/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'paid', paid_at: new Date().toISOString() }),
-    });
-    fetchInvoices();
+    try {
+      const res = await fetch(`/api/invoices/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'paid', paid_at: new Date().toISOString() }),
+      });
+      if (!res.ok) { alert('Failed to mark invoice as paid'); return; }
+      fetchInvoices();
+    } catch (e) {
+      alert('Network error. Please try again.');
+    }
   }
 
   if (loading) return <p className="text-gray-400 text-center py-8">Loading...</p>;

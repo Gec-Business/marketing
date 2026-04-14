@@ -23,40 +23,55 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
 
   async function fetchPost() {
     setLoading(true);
-    const res = await fetch(`/api/content/${id}`);
-    const data = await res.json();
-    setPost(data.post);
-    setComments(data.comments || []);
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/content/${id}`);
+      if (!res.ok) throw new Error('Failed to fetch post');
+      const data = await res.json();
+      setPost(data.post);
+      setComments(data.comments || []);
+    } catch (e) {
+      console.error('Fetch post error:', e);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function submitComment() {
     if (!newComment.trim()) return;
-    await fetch(`/api/content/${id}/comments`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ component: commentComponent, message: newComment }),
-    });
-    setNewComment('');
-    fetchPost();
+    try {
+      const res = await fetch(`/api/content/${id}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ component: commentComponent, message: newComment }),
+      });
+      if (!res.ok) { alert('Failed to post comment'); return; }
+      setNewComment('');
+      fetchPost();
+    } catch (e) { alert('Network error.'); }
   }
 
   async function handleApprove() {
-    await fetch(`/api/content/${id}/approve`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'approve' }),
-    });
-    fetchPost();
+    try {
+      const res = await fetch(`/api/content/${id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'approve' }),
+      });
+      if (!res.ok) { alert('Failed to approve'); return; }
+      fetchPost();
+    } catch (e) { alert('Network error.'); }
   }
 
   async function handleReject() {
-    await fetch(`/api/content/${id}/approve`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'reject' }),
-    });
-    fetchPost();
+    try {
+      const res = await fetch(`/api/content/${id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reject' }),
+      });
+      if (!res.ok) { alert('Failed to reject'); return; }
+      fetchPost();
+    } catch (e) { alert('Network error.'); }
   }
 
   if (loading) return <p className="text-gray-400 text-center py-8">Loading...</p>;

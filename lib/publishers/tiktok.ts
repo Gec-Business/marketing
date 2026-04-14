@@ -22,7 +22,7 @@ export async function postVideoToTikTok(
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json; charset=UTF-8',
     },
     body: JSON.stringify({
       post_info: {
@@ -39,6 +39,7 @@ export async function postVideoToTikTok(
     }),
   });
 
+  if (!initRes.ok) throw new Error(`TikTok API error: ${initRes.status} ${initRes.statusText}`);
   const initData = await initRes.json();
   if (initData.error?.code) {
     throw new Error(`TikTok: ${initData.error.message || initData.error.code}`);
@@ -58,6 +59,7 @@ export async function postVideoToTikTok(
       },
       body: JSON.stringify({ publish_id: publishId }),
     });
+    if (!statusRes.ok) throw new Error(`TikTok status API error: ${statusRes.status}`);
     const statusData = await statusRes.json();
     const status = statusData.data?.status;
     if (status === 'PUBLISH_COMPLETE') {
@@ -68,7 +70,7 @@ export async function postVideoToTikTok(
     }
   }
 
-  return { postId: publishId };
+  throw new Error('TikTok publish timed out: status unknown after 150 seconds');
 }
 
 export async function postPhotoToTikTok(
@@ -82,7 +84,7 @@ export async function postPhotoToTikTok(
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json; charset=UTF-8',
     },
     body: JSON.stringify({
       post_info: {
@@ -98,10 +100,13 @@ export async function postPhotoToTikTok(
     }),
   });
 
+  if (!initRes.ok) throw new Error(`TikTok photo API error: ${initRes.status} ${initRes.statusText}`);
   const initData = await initRes.json();
   if (initData.error?.code) {
     throw new Error(`TikTok photo: ${initData.error.message || initData.error.code}`);
   }
 
-  return { postId: initData.data?.publish_id || 'unknown' };
+  const photoPublishId = initData.data?.publish_id;
+  if (!photoPublishId) throw new Error('TikTok photo: No publish_id returned');
+  return { postId: photoPublishId };
 }

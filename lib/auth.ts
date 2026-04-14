@@ -4,8 +4,13 @@ import { query, queryOne } from './db';
 import type { SessionData, User } from './types';
 import bcrypt from 'bcryptjs';
 
+const sessionSecret = process.env.SESSION_SECRET;
+if (!sessionSecret || sessionSecret.length < 32) {
+  throw new Error('SESSION_SECRET must be set and at least 32 characters long');
+}
+
 export const sessionOptions: SessionOptions = {
-  password: process.env.SESSION_SECRET!,
+  password: sessionSecret,
   cookieName: 'mk-session',
   cookieOptions: {
     secure: process.env.NODE_ENV === 'production',
@@ -22,7 +27,7 @@ export async function getSession() {
 export async function getCurrentUser(): Promise<User | null> {
   const session = await getSession();
   if (!session.is_logged_in || !session.user_id) return null;
-  return queryOne<User>('SELECT id, email, name, role, tenant_id, created_at FROM users WHERE id = $1', [session.user_id]);
+  return queryOne<User>('SELECT id, email, name, role, tenant_id, api_keys, created_at FROM users WHERE id = $1', [session.user_id]);
 }
 
 export async function requireUser(): Promise<User> {

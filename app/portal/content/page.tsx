@@ -11,28 +11,40 @@ export default function PortalContentPage() {
 
   async function fetchPosts() {
     setLoading(true);
-    const res = await fetch('/api/content');
-    const data = await res.json();
-    setPosts(data.posts || []);
-    setLoading(false);
+    try {
+      const res = await fetch('/api/content');
+      if (!res.ok) throw new Error('Failed to fetch posts');
+      const data = await res.json();
+      setPosts(data.posts || []);
+    } catch (e) {
+      console.error('Fetch posts error:', e);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function approvePost(postId: string) {
-    await fetch(`/api/content/${postId}/approve`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'approve' }),
-    });
-    fetchPosts();
+    try {
+      const res = await fetch(`/api/content/${postId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'approve' }),
+      });
+      if (!res.ok) { alert('Failed to approve post'); return; }
+      fetchPosts();
+    } catch (e) { alert('Network error.'); }
   }
 
   async function rejectPost(postId: string) {
-    await fetch(`/api/content/${postId}/approve`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'reject' }),
-    });
-    fetchPosts();
+    try {
+      const res = await fetch(`/api/content/${postId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reject' }),
+      });
+      if (!res.ok) { alert('Failed to reject post'); return; }
+      fetchPosts();
+    } catch (e) { alert('Network error.'); }
   }
 
   if (loading) return <p className="text-gray-400 text-center py-8">Loading...</p>;

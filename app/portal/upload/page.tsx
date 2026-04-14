@@ -18,18 +18,35 @@ export default function UploadPage() {
     if (!fileList || !tenantId) return;
 
     setUploading(true);
+    let successCount = 0;
+    let failCount = 0;
     for (const file of Array.from(fileList)) {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('tenant_id', tenantId);
-      const res = await fetch('/api/content/upload', { method: 'POST', body: formData });
-      if (res.ok) {
-        const data = await res.json();
-        setFiles(prev => [data.media, ...prev]);
+      try {
+        const res = await fetch('/api/content/upload', { method: 'POST', body: formData });
+        if (res.ok) {
+          const data = await res.json();
+          setFiles(prev => [data.media, ...prev]);
+          successCount++;
+        } else {
+          const err = await res.json().catch(() => ({ error: 'Upload failed' }));
+          alert(`Failed to upload ${file.name}: ${err.error}`);
+          failCount++;
+        }
+      } catch {
+        alert(`Network error uploading ${file.name}`);
+        failCount++;
       }
     }
     setUploading(false);
     e.target.value = '';
+    if (successCount > 0 && failCount === 0) {
+      alert(`${successCount} file(s) uploaded successfully.`);
+    } else if (successCount > 0 && failCount > 0) {
+      alert(`${successCount} uploaded, ${failCount} failed.`);
+    }
   }
 
   return (

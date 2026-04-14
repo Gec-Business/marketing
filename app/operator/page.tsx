@@ -1,4 +1,5 @@
 import { query } from '@/lib/db';
+import AlertsWidget from '@/components/operator/AlertsWidget';
 
 export default async function OperatorOverview() {
   const tenants = await query('SELECT id, name, status FROM tenants ORDER BY created_at DESC');
@@ -21,6 +22,8 @@ export default async function OperatorOverview() {
           <p className="text-3xl font-bold">{(postCount[0] as any)?.count || 0}</p>
         </div>
       </div>
+
+      <AlertsWidget />
     </div>
   );
 }

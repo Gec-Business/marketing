@@ -18,6 +18,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
+  const allowedTypes = [
+    'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+    'video/mp4', 'video/quicktime', 'video/webm',
+  ];
+  if (!allowedTypes.includes(file.type)) {
+    return NextResponse.json({ error: `File type not allowed: ${file.type}. Accepted: images (jpeg, png, webp, gif) and videos (mp4, mov, webm).` }, { status: 400 });
+  }
+
   const maxSize = 500 * 1024 * 1024; // 500MB
   if (file.size > maxSize) {
     return NextResponse.json({ error: 'File too large. Maximum 500MB.' }, { status: 400 });

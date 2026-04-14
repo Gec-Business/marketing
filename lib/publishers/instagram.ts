@@ -25,6 +25,7 @@ export async function postToInstagram(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ image_url: imageUrl, caption, access_token: accessToken }),
   });
+  if (!containerRes.ok) throw new Error(`Instagram API error: ${containerRes.status} ${containerRes.statusText}`);
   const container = await containerRes.json();
   if (container.error) throw new Error(`Instagram container: ${container.error.message}`);
 
@@ -36,6 +37,7 @@ export async function postToInstagram(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ creation_id: container.id, access_token: accessToken }),
   });
+  if (!pubRes.ok) throw new Error(`Instagram publish API error: ${pubRes.status} ${pubRes.statusText}`);
   const pub = await pubRes.json();
   if (pub.error) throw new Error(`Instagram publish: ${pub.error.message}`);
 
@@ -54,6 +56,7 @@ export async function postReelToInstagram(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ media_type: 'REELS', video_url: videoUrl, caption, access_token: accessToken }),
   });
+  if (!containerRes.ok) throw new Error(`Instagram reel API error: ${containerRes.status} ${containerRes.statusText}`);
   const container = await containerRes.json();
   if (container.error) throw new Error(`Instagram reel: ${container.error.message}`);
 
@@ -61,9 +64,11 @@ export async function postReelToInstagram(
   for (let i = 0; i < 20; i++) {
     await new Promise(r => setTimeout(r, 3000));
     const statusRes = await fetch(`${GRAPH_API}/${container.id}?fields=status_code&access_token=${accessToken}`);
+    if (!statusRes.ok) throw new Error(`Instagram status API error: ${statusRes.status}`);
     const status = await statusRes.json();
     if (status.status_code === 'FINISHED') break;
     if (status.status_code === 'ERROR') throw new Error('Instagram reel processing failed');
+    if (i === 19) throw new Error('Instagram reel processing timed out');
   }
 
   const pubRes = await fetch(`${GRAPH_API}/${igAccountId}/media_publish`, {
@@ -71,6 +76,7 @@ export async function postReelToInstagram(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ creation_id: container.id, access_token: accessToken }),
   });
+  if (!pubRes.ok) throw new Error(`Instagram reel publish API error: ${pubRes.status} ${pubRes.statusText}`);
   const pub = await pubRes.json();
   if (pub.error) throw new Error(`Instagram reel publish: ${pub.error.message}`);
 

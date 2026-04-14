@@ -1,20 +1,24 @@
 import { askClaude } from './client';
+import { sanitizeTenantForPrompt } from './sanitize';
 import type { Tenant, Assessment } from '../types';
 
 export async function generateContentBatch(
   tenant: Tenant,
   assessment: Assessment,
   count: number,
-  weekStart: string
+  weekStart: string,
+  apiKey?: string
 ): Promise<{ posts: any[]; tokensUsed: number }> {
   const strategy = assessment.strategy_data;
 
   const systemPrompt = `You are a social media content creator. Generate ${count} social media posts for the given business. Each post must be bilingual: ${tenant.primary_language === 'ka' ? 'Georgian' : 'English'} primary, ${tenant.secondary_language === 'ka' ? 'Georgian' : 'English'} secondary. Return ONLY a valid JSON array — no markdown, no code fences.`;
 
+  const safe = sanitizeTenantForPrompt(tenant);
+
   const userPrompt = `Generate ${count} posts for:
 
-Business: ${tenant.name}
-Industry: ${tenant.industry}
+Business: ${safe.name}
+Industry: ${safe.industry}
 Channels: ${tenant.channels.join(', ')}
 Week starting: ${weekStart}
 
@@ -39,7 +43,7 @@ For each post generate:
 
 Mix content types. Include video posts where appropriate. Visual descriptions should be specific enough for DALL-E.`;
 
-  const { text, tokensUsed } = await askClaude(systemPrompt, userPrompt, { maxTokens: 8192 });
+  const { text, tokensUsed } = await askClaude(systemPrompt, userPrompt, { maxTokens: 8192, apiKey });
 
   try {
     const cleaned = text.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');

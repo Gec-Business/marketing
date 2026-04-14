@@ -1,18 +1,22 @@
 import { askClaude } from './client';
+import { sanitizeTenantForPrompt } from './sanitize';
 import type { Tenant } from '../types';
 
 export async function runBrandAgent(
   tenant: Tenant,
   researchData: Record<string, unknown>,
-  competitorData: Record<string, unknown>
+  competitorData: Record<string, unknown>,
+  apiKey?: string
 ): Promise<{ data: Record<string, unknown>; tokensUsed: number }> {
   const systemPrompt = `You are a brand audit agent. Perform a comprehensive brand analysis using established frameworks (Keller CBBE, Kapferer Prism, SWOT). Score each dimension honestly. Return ONLY valid JSON — no markdown, no code fences.`;
 
+  const safe = sanitizeTenantForPrompt(tenant);
+
   const userPrompt = `Brand audit for:
 
-Business: ${tenant.name}
-Industry: ${tenant.industry}
-City: ${tenant.city}
+Business: ${safe.name}
+Industry: ${safe.industry}
+City: ${safe.city}
 
 Research: ${JSON.stringify(researchData, null, 2)}
 Competitors: ${JSON.stringify(competitorData, null, 2)}
@@ -46,7 +50,7 @@ Generate JSON:
   ]
 }`;
 
-  const { text, tokensUsed } = await askClaude(systemPrompt, userPrompt, { maxTokens: 6144 });
+  const { text, tokensUsed } = await askClaude(systemPrompt, userPrompt, { maxTokens: 6144, apiKey });
 
   try {
     const cleaned = text.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');

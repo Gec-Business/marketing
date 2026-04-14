@@ -17,30 +17,66 @@ export default function TenantInvoicesPage({ params }: { params: Promise<{ id: s
   useEffect(() => { fetchInvoices(); }, []);
 
   async function fetchInvoices() {
-    const res = await fetch(`/api/invoices?tenant_id=${id}`);
-    const data = await res.json();
-    setInvoices(data.invoices || []);
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/invoices?tenant_id=${id}`);
+      if (!res.ok) throw new Error('Failed to fetch invoices');
+      const data = await res.json();
+      setInvoices(data.invoices || []);
+    } catch (e) {
+      console.error('Fetch invoices error:', e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function generateMonthlyNow() {
+    if (!confirm('Generate this month\'s subscription invoice for this tenant?')) return;
+    try {
+      const res = await fetch('/api/invoices/generate-now', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenant_id: id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert('Failed: ' + (data.error || res.statusText));
+        return;
+      }
+      alert(`Invoice ${data.invoice?.invoice_number} created.`);
+      fetchInvoices();
+    } catch (e) {
+      alert('Network error.');
+    }
   }
 
   async function createInvoice() {
-    const total = items.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
-    await fetch('/api/invoices', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tenant_id: id,
-        items: items.filter(i => i.description && i.amount).map(i => ({ description: i.description, amount: parseFloat(i.amount) })),
-        total_amount: total,
-        period_start: periodStart,
-        period_end: periodEnd,
-        due_date: dueDate || null,
-        notes: notes || null,
-      }),
-    });
-    setShowForm(false);
-    setItems([{ description: '', amount: '' }]);
-    fetchInvoices();
+    const validItems = items.filter(i => i.description && i.amount);
+    if (!periodStart || !periodEnd || validItems.length === 0) {
+      alert('Please fill in period dates and at least one line item.');
+      return;
+    }
+    const total = validItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+    try {
+      const res = await fetch('/api/invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenant_id: id,
+          items: validItems.map(i => ({ description: i.description, amount: parseFloat(i.amount) })),
+          total_amount: total,
+          period_start: periodStart,
+          period_end: periodEnd,
+          due_date: dueDate || null,
+          notes: notes || null,
+        }),
+      });
+      if (!res.ok) { alert('Failed to create invoice'); return; }
+      setShowForm(false);
+      setItems([{ description: '', amount: '' }]);
+      fetchInvoices();
+    } catch (e) {
+      alert('Network error. Please try again.');
+    }
   }
 
   return (
@@ -50,9 +86,14 @@ export default function TenantInvoicesPage({ params }: { params: Promise<{ id: s
           <Link href={`/operator/tenants/${id}`} className="text-gray-400 hover:text-gray-600">&larr;</Link>
           <h1 className="text-2xl font-bold">Invoices</h1>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
-          + New Invoice
-        </button>
+        <div className="flex gap-2">
+          <button onClick={generateMonthlyNow} className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50">
+            Generate Monthly Now
+          </button>
+          <button onClick={() => setShowForm(!showForm)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+            + New Invoice
+          </button>
+        </div>
       </div>
 
       {showForm && (

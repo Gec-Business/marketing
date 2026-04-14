@@ -16,8 +16,9 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     { href: `/operator/tenants/${id}/strategy`, label: 'Strategy', desc: 'View & approve strategy' },
     { href: `/operator/tenants/${id}/content`, label: 'Content', desc: `${(postCount as any)?.count || 0} posts` },
     { href: `/operator/tenants/${id}/connect`, label: 'Connect Accounts', desc: 'Social media accounts' },
+    { href: `/operator/tenants/${id}/reports`, label: 'Reports', desc: 'Weekly + monthly summaries' },
     { href: `/operator/tenants/${id}/invoices`, label: 'Invoices', desc: 'Billing' },
-    { href: `/operator/tenants/${id}/settings`, label: 'Settings', desc: 'Configuration' },
+    { href: `/operator/tenants/${id}/settings`, label: 'Settings', desc: 'Configuration & billing' },
   ];
 
   return (

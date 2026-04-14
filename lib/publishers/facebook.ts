@@ -25,6 +25,7 @@ export async function postToFacebook(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: imageUrl, message: caption, access_token: pageToken }),
     });
+    if (!res.ok) throw new Error(`Facebook API error: ${res.status} ${res.statusText}`);
     const data = await res.json();
     if (data.error) throw new Error(`Facebook: ${data.error.message}`);
     return { postId: data.id || data.post_id };
@@ -35,6 +36,7 @@ export async function postToFacebook(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message: caption, access_token: pageToken }),
   });
+  if (!res.ok) throw new Error(`Facebook API error: ${res.status} ${res.statusText}`);
   const data = await res.json();
   if (data.error) throw new Error(`Facebook: ${data.error.message}`);
   return { postId: data.id };
@@ -56,6 +58,7 @@ export async function postVideoToFacebook(
       access_token: pageToken,
     }),
   });
+  if (!initRes.ok) throw new Error(`Facebook video API error: ${initRes.status} ${initRes.statusText}`);
   const initData = await initRes.json();
   if (initData.error) throw new Error(`Facebook video: ${initData.error.message}`);
 

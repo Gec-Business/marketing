@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runAutoPublish } from '@/lib/publishers/engine';
+import crypto from 'crypto';
 
 export async function POST(req: NextRequest) {
   const secret = req.headers.get('x-cron-secret');
-  if (secret !== process.env.CRON_SECRET) {
+  const expected = process.env.CRON_SECRET;
+  if (!secret || !expected || secret.length !== expected.length) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (!crypto.timingSafeEqual(Buffer.from(secret), Buffer.from(expected))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

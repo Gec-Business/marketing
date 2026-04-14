@@ -9,7 +9,9 @@ const STATUS_COLORS: Record<string, string> = {
   pending_tenant: 'bg-yellow-100 text-yellow-700',
   tenant_approved: 'bg-green-100 text-green-700',
   scheduled: 'bg-indigo-100 text-indigo-700',
+  publishing: 'bg-orange-100 text-orange-700',
   posted: 'bg-green-100 text-green-700',
+  partially_posted: 'bg-amber-100 text-amber-700',
   failed: 'bg-red-100 text-red-700',
   rejected: 'bg-red-100 text-red-700',
 };
@@ -27,39 +29,57 @@ export default function ContentPage({ params }: { params: Promise<{ id: string }
 
   async function fetchPosts() {
     setLoading(true);
-    const res = await fetch(`/api/content?tenant_id=${id}`);
-    const data = await res.json();
-    setPosts(data.posts || []);
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/content?tenant_id=${id}`);
+      if (!res.ok) throw new Error('Failed to fetch posts');
+      const data = await res.json();
+      setPosts(data.posts || []);
+    } catch (e) {
+      console.error('Fetch posts error:', e);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function generateBatch() {
     setGenerating(true);
-    await fetch('/api/content', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tenant_id: id, count, week_start: weekStart, generate_images: genImages }),
-    });
-    await fetchPosts();
-    setGenerating(false);
+    try {
+      const res = await fetch('/api/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenant_id: id, count, week_start: weekStart, generate_images: genImages }),
+      });
+      if (!res.ok) { alert('Content generation failed. Please try again.'); return; }
+      await fetchPosts();
+    } catch (e) {
+      alert('Network error during generation.');
+    } finally {
+      setGenerating(false);
+    }
   }
 
   async function approvePost(postId: string) {
-    await fetch(`/api/content/${postId}/approve`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'approve' }),
-    });
-    fetchPosts();
+    try {
+      const res = await fetch(`/api/content/${postId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'approve' }),
+      });
+      if (!res.ok) { alert('Failed to approve post'); return; }
+      fetchPosts();
+    } catch (e) { alert('Network error.'); }
   }
 
   async function rejectPost(postId: string) {
-    await fetch(`/api/content/${postId}/approve`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'reject' }),
-    });
-    fetchPosts();
+    try {
+      const res = await fetch(`/api/content/${postId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reject' }),
+      });
+      if (!res.ok) { alert('Failed to reject post'); return; }
+      fetchPosts();
+    } catch (e) { alert('Network error.'); }
   }
 
   return (

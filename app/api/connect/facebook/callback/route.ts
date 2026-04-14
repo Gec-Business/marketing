@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireOperator } from '@/lib/auth';
 import { queryOne } from '@/lib/db';
 
 export async function GET(req: NextRequest) {
+  await requireOperator();
   const code = req.nextUrl.searchParams.get('code');
   const state = req.nextUrl.searchParams.get('state');
   const savedState = req.cookies.get('fb_oauth_state')?.value;
@@ -39,13 +41,17 @@ export async function GET(req: NextRequest) {
   const igRes = await fetch(`https://graph.facebook.com/v25.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`);
   const igData = await igRes.json();
 
-  // Save Facebook connection
+  // Save Facebook connection (page tokens from long-lived user tokens don't expire, but track it anyway)
+  const fbExpiresAt = tokenData.expires_in
+    ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
+    : null;
+
   await queryOne(
-    `INSERT INTO social_connections (tenant_id, platform, credentials)
-     VALUES ($1, 'facebook', $2)
-     ON CONFLICT (tenant_id, platform) DO UPDATE SET credentials = $2, connected_at = now(), status = 'active'
+    `INSERT INTO social_connections (tenant_id, platform, credentials, expires_at)
+     VALUES ($1, 'facebook', $2, $3)
+     ON CONFLICT (tenant_id, platform) DO UPDATE SET credentials = $2, connected_at = now(), expires_at = $3, status = 'active'
      RETURNING *`,
-    [tenantId, JSON.stringify({ page_id: page.id, page_token: page.access_token, page_name: page.name })]
+    [tenantId, JSON.stringify({ page_id: page.id, page_token: page.access_token, page_name: page.name, user_token: userToken }), fbExpiresAt]
   );
 
   // Save Instagram connection if available

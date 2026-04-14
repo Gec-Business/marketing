@@ -10,19 +10,41 @@ export default function AssessmentPage({ params }: { params: Promise<{ id: strin
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
 
-  useEffect(() => { fetchAssessment(); }, []);
-
-  async function fetchAssessment() {
-    setLoading(true);
-    const res = await fetch(`/api/assessments?tenant_id=${id}`);
-    if (res.ok) {
+  useEffect(() => {
+    fetchAssessment();
+    // Poll every 5s only while assessment is in a transient state
+    const interval = setInterval(async () => {
+      const res = await fetch(`/api/assessments?tenant_id=${id}`);
+      if (!res.ok) return;
       const data = await res.json();
       if (data.assessment) {
         setAssessment(data.assessment);
         setAgents(data.agents || []);
+        const status = data.assessment.status;
+        if (!['pending', 'researching', 'analyzing', 'generating'].includes(status)) {
+          clearInterval(interval);
+        }
       }
+    }, 5000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  async function fetchAssessment() {
+    try {
+      const res = await fetch(`/api/assessments?tenant_id=${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.assessment) {
+          setAssessment(data.assessment);
+          setAgents(data.agents || []);
+        }
+      }
+    } catch (e) {
+      console.error('Fetch assessment error:', e);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   async function startAssessment() {
@@ -40,12 +62,17 @@ export default function AssessmentPage({ params }: { params: Promise<{ id: strin
 
   async function approveAssessment() {
     if (!assessment) return;
-    await fetch(`/api/assessments/${assessment.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'tea_approve' }),
-    });
-    fetchAssessment();
+    try {
+      const res = await fetch(`/api/assessments/${assessment.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'tea_approve' }),
+      });
+      if (!res.ok) { alert('Failed to approve assessment'); return; }
+      fetchAssessment();
+    } catch (e) {
+      alert('Network error. Please try again.');
+    }
   }
 
   if (loading) return <div className="text-gray-400 py-12 text-center">Loading...</div>;

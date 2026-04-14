@@ -37,18 +37,21 @@ export async function postToLinkedIn(
       headers,
       body: JSON.stringify({ initializeUploadRequest: { owner: author } }),
     });
+    if (!initRes.ok) throw new Error(`LinkedIn image init error: ${initRes.status} ${initRes.statusText}`);
     const initData = await initRes.json();
     const uploadUrl = initData.value?.uploadUrl;
     imageUrn = initData.value?.image;
 
     if (uploadUrl && imageUrn) {
       const imgRes = await fetch(imageUrl);
+      if (!imgRes.ok) throw new Error(`Failed to fetch image: ${imgRes.status}`);
       const imgBuffer = await imgRes.arrayBuffer();
-      await fetch(uploadUrl, {
+      const uploadRes = await fetch(uploadUrl, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${accessToken}` },
         body: imgBuffer,
       });
+      if (!uploadRes.ok) throw new Error(`LinkedIn image upload error: ${uploadRes.status}`);
     }
   }
 
@@ -75,7 +78,7 @@ export async function postToLinkedIn(
   const postId = postRes.headers.get('x-restli-id') || 'unknown';
   if (!postRes.ok) {
     const err = await postRes.json().catch(() => ({}));
-    throw new Error(`LinkedIn: ${(err as any).message || postRes.statusText}`);
+    throw new Error(`LinkedIn API error: ${postRes.status} ${(err as any).message || postRes.statusText}`);
   }
 
   return { postId };

@@ -1,17 +1,19 @@
 import { askClaude } from './client';
+import { sanitizeTenantForPrompt } from './sanitize';
 import type { Tenant } from '../types';
 
 export async function runStrategyAgent(
   tenant: Tenant,
   researchData: Record<string, unknown>,
   competitorData: Record<string, unknown>,
-  brandAudit: Record<string, unknown>
+  brandAudit: Record<string, unknown>,
+  apiKey?: string
 ): Promise<{ data: Record<string, unknown>; tokensUsed: number }> {
   let totalTokens = 0;
 
   const { text: text1, tokensUsed: t1 } = await askClaude(
     `You are a social media strategy consultant. Generate a strategic framework and channel strategy. Return ONLY valid JSON — no markdown, no code fences.`,
-    `Business: ${tenant.name} | Industry: ${tenant.industry} | City: ${tenant.city}
+    `Business: ${sanitizeTenantForPrompt(tenant).name} | Industry: ${sanitizeTenantForPrompt(tenant).industry} | City: ${sanitizeTenantForPrompt(tenant).city}
 Channels: ${tenant.channels.join(', ')}
 Posting: ${tenant.posts_per_week} posts/week, ${tenant.video_ideas_per_month} video ideas/month
 Language: ${tenant.primary_language} primary, ${tenant.secondary_language} secondary
@@ -33,7 +35,7 @@ Generate JSON:
     "content_mix": [{ "type": "", "percentage": 0, "description": "" }]
   }
 }`,
-    { maxTokens: 4096 }
+    { maxTokens: 4096, apiKey }
   );
   totalTokens += t1;
 
@@ -65,7 +67,7 @@ Generate JSON:
     { "idea": "", "cost": "low|medium|high", "impact": "high|medium", "description": "" }
   ]
 }`,
-    { maxTokens: 6144 }
+    { maxTokens: 6144, apiKey }
   );
   totalTokens += t2;
 

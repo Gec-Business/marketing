@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireOperator } from '@/lib/auth';
 import { queryOne } from '@/lib/db';
 
 export async function GET(req: NextRequest) {
+  await requireOperator();
   const code = req.nextUrl.searchParams.get('code');
   const state = req.nextUrl.searchParams.get('state');
   const savedState = req.cookies.get('li_oauth_state')?.value;

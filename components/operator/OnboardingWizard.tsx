@@ -69,6 +69,10 @@ export default function OnboardingWizard({ baseQuestions }: { baseQuestions: Onb
           industryQuestions.map((q) => [q.id, answers[q.id]])
         ),
       },
+      monthly_fee: answers.monthly_fee ? parseFloat(answers.monthly_fee) : null,
+      billing_currency: answers.billing_currency || 'GEL',
+      billing_start_date: answers.billing_start_date || null,
+      billing_duration_months: answers.billing_duration_months ? parseInt(answers.billing_duration_months) : null,
     };
 
     const res = await fetch('/api/tenants', {
@@ -214,6 +218,60 @@ export default function OnboardingWizard({ baseQuestions }: { baseQuestions: Onb
             <div><span className="text-sm text-gray-500">Video ideas/month:</span> <span>{answers.video_ideas_per_month || 4}</span></div>
             <div><span className="text-sm text-gray-500">Client email:</span> <span>{answers.tenant_email}</span></div>
           </div>
+
+          <div className="bg-white rounded-xl p-5 shadow-sm">
+            <h3 className="font-semibold mb-3">Billing &amp; Subscription</h3>
+            <p className="text-xs text-gray-500 mb-4">Set the monthly fee and contract length. The system will auto-generate a draft invoice each month for you to review and send.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Monthly Fee</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={answers.monthly_fee || ''}
+                  onChange={(e) => updateAnswer('monthly_fee', e.target.value)}
+                  placeholder="200"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Currency</label>
+                <select
+                  value={answers.billing_currency || 'GEL'}
+                  onChange={(e) => updateAnswer('billing_currency', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
+                >
+                  <option value="GEL">GEL</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Contract Start Date</label>
+                <input
+                  type="date"
+                  value={answers.billing_start_date || ''}
+                  onChange={(e) => updateAnswer('billing_start_date', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Duration (months)</label>
+                <select
+                  value={answers.billing_duration_months || ''}
+                  onChange={(e) => updateAnswer('billing_duration_months', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
+                >
+                  <option value="">Ongoing (no end date)</option>
+                  <option value="3">3 months</option>
+                  <option value="6">6 months</option>
+                  <option value="12">12 months</option>
+                  <option value="24">24 months</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
           <div className="flex gap-3">
             <button onClick={() => setStep('industry')} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
               Back

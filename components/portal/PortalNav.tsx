@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
 const nav = [
-  { href: '/portal', label: 'Content' },
+  { href: '/portal/content', label: 'Content' },
   { href: '/portal/upload', label: 'Upload' },
   { href: '/portal/strategy', label: 'Strategy' },
+  { href: '/portal/reports', label: 'Reports' },
   { href: '/portal/invoices', label: 'Invoices' },
 ];
 
@@ -26,7 +27,7 @@ export default function PortalNav({ tenantName }: { tenantName: string }) {
           <h1 className="font-bold text-lg">{tenantName}</h1>
           <nav className="flex gap-1">
             {nav.map((item) => {
-              const active = pathname === item.href;
+              const active = pathname === item.href || (item.href !== '/portal' && pathname.startsWith(item.href));
               return (
                 <Link
                   key={item.href}

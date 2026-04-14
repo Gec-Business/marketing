@@ -35,12 +35,15 @@ export default function StrategyPage() {
   }
 
   async function approveStrategy() {
-    await fetch(`/api/assessments/${assessment.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'tenant_approve' }),
-    });
-    if (tenantId) fetchAssessment(tenantId);
+    try {
+      const res = await fetch(`/api/assessments/${assessment.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'tenant_approve' }),
+      });
+      if (!res.ok) { alert('Failed to approve strategy'); return; }
+      if (tenantId) fetchAssessment(tenantId);
+    } catch (e) { alert('Network error.'); }
   }
 
   const sections = [
