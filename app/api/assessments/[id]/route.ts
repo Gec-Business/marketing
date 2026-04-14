@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth';
 import { queryOne, query } from '@/lib/db';
+import type { Assessment } from '@/lib/types';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
 
-  const assessment = await queryOne('SELECT * FROM assessments WHERE id = $1', [id]);
+  const assessment = await queryOne<Assessment>('SELECT * FROM assessments WHERE id = $1', [id]);
   if (!assessment) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  if (user.role === 'tenant' && user.tenant_id !== (assessment as any).tenant_id) {
+  if (user.role === 'tenant' && user.tenant_id !== assessment.tenant_id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -31,12 +32,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   if (action === 'tenant_approve') {
-    const assessment = await queryOne('SELECT tenant_id FROM assessments WHERE id = $1', [id]);
-    if (user.role !== 'tenant' || user.tenant_id !== (assessment as any)?.tenant_id) {
+    const assessment = await queryOne<{ tenant_id: string }>('SELECT tenant_id FROM assessments WHERE id = $1', [id]);
+    if (user.role !== 'tenant' || user.tenant_id !== assessment?.tenant_id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     await queryOne('UPDATE assessments SET tenant_approved = true, status = $1 WHERE id = $2 RETURNING *', ['approved', id]);
-    await query('UPDATE tenants SET status = $1 WHERE id = $2', ['active', (assessment as any).tenant_id]);
+    await query('UPDATE tenants SET status = $1 WHERE id = $2', ['active', assessment.tenant_id]);
   }
 
   const updated = await queryOne('SELECT * FROM assessments WHERE id = $1', [id]);

@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser, requireTenantAccess } from '@/lib/auth';
 import { queryOne, query } from '@/lib/db';
+import type { Post } from '@/lib/types';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
-  const post = await queryOne('SELECT * FROM posts WHERE id = $1', [id]);
+  const post = await queryOne<Post>('SELECT * FROM posts WHERE id = $1', [id]);
   if (!post) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  await requireTenantAccess((post as any).tenant_id);
+  await requireTenantAccess(post.tenant_id);
 
   const comments = await query(
     `SELECT c.*, u.name as user_name, u.role as user_role FROM post_comments c JOIN users u ON c.user_id = u.id WHERE c.post_id = $1 ORDER BY c.created_at ASC`,
@@ -20,9 +21,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
-  const post = await queryOne('SELECT * FROM posts WHERE id = $1', [id]);
+  const post = await queryOne<Post>('SELECT * FROM posts WHERE id = $1', [id]);
   if (!post) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  await requireTenantAccess((post as any).tenant_id);
+  await requireTenantAccess(post.tenant_id);
 
   const body = await req.json();
   const allowed = ['copy_primary', 'copy_secondary', 'platform_copies', 'hashtags', 'media_urls', 'scheduled_at', 'content_type', 'platforms', 'video_idea'];

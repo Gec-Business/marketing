@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   );
   if (!invoice) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const inv = invoice as any;
+  const inv = invoice as Record<string, any>;
   if (user.role === 'tenant' && user.tenant_id !== inv.tenant_id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }

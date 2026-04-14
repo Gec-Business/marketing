@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth';
 import { queryOne } from '@/lib/db';
+import type { Post } from '@/lib/types';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
   const { action } = await req.json();
 
-  const post = await queryOne('SELECT * FROM posts WHERE id = $1', [id]);
+  const post = await queryOne<Post>('SELECT * FROM posts WHERE id = $1', [id]);
   if (!post) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const p = post as any;
+  const p = post;
 
   if (user.role === 'operator' || user.role === 'admin') {
     if (action === 'approve') {
