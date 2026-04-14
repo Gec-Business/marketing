@@ -1,6 +1,8 @@
 'use client';
 
-export default function StrategySection({ data }: { data: any }) {
+import SubBlockRerun from './SubBlockRerun';
+
+export default function StrategySection({ data, assessmentId, onRefresh }: { data: any; assessmentId?: string; onRefresh?: () => void }) {
   if (!data) return null;
   const framework = data.strategic_framework || {};
   const channelStrategy = data.channel_strategy || {};
@@ -14,7 +16,7 @@ export default function StrategySection({ data }: { data: any }) {
       {/* Vision & Mission */}
       {(framework.vision || framework.mission) && (
         <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="font-semibold text-lg mb-4">Strategic Framework</h3>
+          <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-lg">Strategic Framework</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="strategy_data" block="strategic_framework" label="Framework" onComplete={onRefresh} />}</div>
           {framework.vision && (
             <div className="mb-4 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
               <p className="text-xs text-blue-600 font-semibold uppercase mb-1">Vision</p>
@@ -54,7 +56,7 @@ export default function StrategySection({ data }: { data: any }) {
       {/* Brand Voice */}
       {messaging.brand_voice && (
         <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="font-semibold text-lg mb-4">Brand Voice</h3>
+          <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-lg">Brand Voice</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="strategy_data" block="messaging_strategy" label="Brand Voice" onComplete={onRefresh} />}</div>
           <div className="grid grid-cols-2 gap-4 mb-4">
             {messaging.brand_voice.tone && <div><p className="text-xs text-gray-500">Tone</p><p className="text-sm font-medium">{messaging.brand_voice.tone}</p></div>}
             {messaging.brand_voice.personality && <div><p className="text-xs text-gray-500">Personality</p><p className="text-sm font-medium">{messaging.brand_voice.personality}</p></div>}
@@ -127,7 +129,7 @@ export default function StrategySection({ data }: { data: any }) {
       {/* Video Ideas */}
       {videoIdeas.length > 0 && (
         <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="font-semibold text-lg mb-4">Video Ideas</h3>
+          <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-lg">Video Ideas</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="strategy_data" block="video_ideas" label="Video Ideas" onComplete={onRefresh} />}</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {videoIdeas.map((v: any, i: number) => (
               <div key={i} className="bg-gray-50 rounded-lg p-4">
@@ -155,7 +157,7 @@ export default function StrategySection({ data }: { data: any }) {
       {/* Action Plan */}
       {Object.keys(actionPlan).length > 0 && (
         <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="font-semibold text-lg mb-4">3-Month Action Plan</h3>
+          <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-lg">3-Month Action Plan</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="strategy_data" block="action_plan" label="Action Plan" onComplete={onRefresh} />}</div>
           <div className="space-y-4">
             {Object.entries(actionPlan).map(([month, weeks]: [string, any]) => (
               <div key={month}>
@@ -175,7 +177,7 @@ export default function StrategySection({ data }: { data: any }) {
       {/* Innovations */}
       {innovations.length > 0 && (
         <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="font-semibold text-lg mb-4">Disruptive Ideas</h3>
+          <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-lg">Disruptive Ideas</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="strategy_data" block="disruptive_innovations" label="Innovations" onComplete={onRefresh} />}</div>
           <div className="space-y-3">
             {innovations.map((inn: any, i: number) => (
               <div key={i} className="p-3 bg-purple-50 rounded-lg border-l-4 border-purple-400">

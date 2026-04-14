@@ -23,6 +23,24 @@ export const STATUS_COLORS: Record<string, string> = {
   churned: 'bg-red-100 text-red-700',
 };
 
+export const ASSESSMENT_STATUS_COLORS: Record<string, string> = {
+  pending: 'bg-gray-100 text-gray-600',
+  researching: 'bg-blue-100 text-blue-700',
+  analyzing: 'bg-indigo-100 text-indigo-700',
+  generating: 'bg-purple-100 text-purple-700',
+  review: 'bg-yellow-100 text-yellow-700',
+  approved: 'bg-green-100 text-green-700',
+  failed: 'bg-red-100 text-red-700',
+};
+
+export const AGENT_STATUS_COLORS: Record<string, string> = {
+  pending: 'bg-gray-300',
+  running: 'bg-yellow-500 animate-pulse',
+  completed: 'bg-green-500',
+  failed: 'bg-red-500',
+  retrying: 'bg-orange-500 animate-pulse',
+};
+
 export const POST_STATUS_COLORS: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-600',
   tea_approved: 'bg-blue-100 text-blue-700',

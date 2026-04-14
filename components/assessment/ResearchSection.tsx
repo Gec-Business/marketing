@@ -1,6 +1,8 @@
 'use client';
 
-export default function ResearchSection({ data }: { data: any }) {
+import SubBlockRerun from './SubBlockRerun';
+
+export default function ResearchSection({ data, assessmentId, onRefresh }: { data: any; assessmentId?: string; onRefresh?: () => void }) {
   if (!data) return null;
   const bp = data.business_profile || {};
   const op = data.online_presence || {};
@@ -14,7 +16,7 @@ export default function ResearchSection({ data }: { data: any }) {
     <div className="space-y-6">
       {/* Business Profile */}
       <div className="bg-white rounded-xl p-6 shadow-sm">
-        <h3 className="font-semibold text-lg mb-4">Business Profile</h3>
+        <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-lg">Business Profile</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="research_data" block="business_profile" label="Profile" onComplete={onRefresh} />}</div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {bp.name && <InfoItem label="Business" value={bp.name} />}
           {bp.industry && <InfoItem label="Industry" value={bp.industry} />}
@@ -85,13 +87,13 @@ export default function ResearchSection({ data }: { data: any }) {
       {/* Target Audience & Market */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="font-semibold text-lg mb-3">Target Audience</h3>
+          <div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-lg">Target Audience</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="research_data" block="target_audience" label="Target Audience" onComplete={onRefresh} />}</div>
           {audience.demographics && <p className="text-sm mb-2"><span className="text-gray-500">Demographics:</span> {audience.demographics}</p>}
           {audience.psychographics && <p className="text-sm mb-2"><span className="text-gray-500">Psychographics:</span> {audience.psychographics}</p>}
           {audience.behaviors && <p className="text-sm"><span className="text-gray-500">Behaviors:</span> {audience.behaviors}</p>}
         </div>
         <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="font-semibold text-lg mb-3">Market Context</h3>
+          <div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-lg">Market Context</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="research_data" block="market_context" label="Market" onComplete={onRefresh} />}</div>
           {market.city && <p className="text-sm mb-1"><span className="text-gray-500">City:</span> {market.city}</p>}
           {market.sector && <p className="text-sm mb-1"><span className="text-gray-500">Sector:</span> {market.sector}</p>}
           {market.market_size_estimate && <p className="text-sm mb-1"><span className="text-gray-500">Market Size:</span> {market.market_size_estimate}</p>}

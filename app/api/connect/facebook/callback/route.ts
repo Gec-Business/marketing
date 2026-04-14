@@ -19,6 +19,9 @@ export async function GET(req: NextRequest) {
 
   // Exchange code for token
   const tokenRes = await fetch(`https://graph.facebook.com/v25.0/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${appSecret}&code=${code}`);
+  if (!tokenRes.ok) {
+    return new NextResponse(`<html><body><h2>Error</h2><p>Facebook API returned ${tokenRes.status}</p></body></html>`, { headers: { 'Content-Type': 'text/html' } });
+  }
   const tokenData = await tokenRes.json();
 
   if (tokenData.error) {

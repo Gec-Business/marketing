@@ -28,7 +28,9 @@ export async function postToFacebook(
     if (!res.ok) throw new Error(`Facebook API error: ${res.status} ${res.statusText}`);
     const data = await res.json();
     if (data.error) throw new Error(`Facebook: ${data.error.message}`);
-    return { postId: data.id || data.post_id };
+    const postId = data.id || data.post_id;
+    if (!postId) throw new Error('Facebook: No post ID returned from API');
+    return { postId };
   }
 
   const res = await fetch(`${GRAPH_API}/${pageId}/feed`, {

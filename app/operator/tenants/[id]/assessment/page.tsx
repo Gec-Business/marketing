@@ -152,7 +152,7 @@ export default function AssessmentPage({ params }: { params: Promise<{ id: strin
           </div>
           {assessment.research_data.parse_error
             ? <RawFallback data={assessment.research_data} label="Research" />
-            : <ResearchSection data={assessment.research_data} />
+            : <ResearchSection data={assessment.research_data} assessmentId={assessment.id} onRefresh={fetchAssessment} />
           }
         </div>
       )}
@@ -165,7 +165,7 @@ export default function AssessmentPage({ params }: { params: Promise<{ id: strin
           </div>
           {assessment.competitor_data.parse_error
             ? <RawFallback data={assessment.competitor_data} label="Competitor Analysis" />
-            : <CompetitorSection data={assessment.competitor_data} />
+            : <CompetitorSection data={assessment.competitor_data} assessmentId={assessment.id} onRefresh={fetchAssessment} />
           }
         </div>
       )}
@@ -178,7 +178,7 @@ export default function AssessmentPage({ params }: { params: Promise<{ id: strin
           </div>
           {assessment.brand_audit.parse_error
             ? <RawFallback data={assessment.brand_audit} label="Brand Audit" />
-            : <BrandAuditSection data={assessment.brand_audit} />
+            : <BrandAuditSection data={assessment.brand_audit} assessmentId={assessment.id} onRefresh={fetchAssessment} />
           }
         </div>
       )}
@@ -191,7 +191,7 @@ export default function AssessmentPage({ params }: { params: Promise<{ id: strin
           </div>
           {assessment.strategy_data.parse_error
             ? <RawFallback data={assessment.strategy_data} label="Strategy" />
-            : <StrategySection data={assessment.strategy_data} />
+            : <StrategySection data={assessment.strategy_data} assessmentId={assessment.id} onRefresh={fetchAssessment} />
           }
         </div>
       )}

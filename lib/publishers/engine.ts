@@ -183,7 +183,8 @@ export async function publishPost(postId: string): Promise<PublishResult[]> {
   if (!post) throw new Error('Post not found');
 
   const p = post as any;
-  const baseUrl = process.env.APP_URL || 'https://mk.gecbusiness.com';
+  const baseUrl = process.env.APP_URL;
+  if (!baseUrl) throw new Error('APP_URL environment variable is not set');
   const results: PublishResult[] = [];
 
   await queryOne(`UPDATE posts SET status = 'publishing' WHERE id = $1 RETURNING *`, [postId]);

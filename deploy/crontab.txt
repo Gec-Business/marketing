@@ -1,0 +1,57 @@
+# MK Marketing Platform — Cron Jobs
+# Install: crontab -e and paste all lines below
+# Replace CRON_SECRET with the actual value from /var/www/marketing/.env
+# All endpoints require: -H "x-cron-secret: YOUR_CRON_SECRET"
+
+BASE=https://mk.gecbusiness.com
+SECRET=mk-cron-secret-2026-random
+
+# === PUBLISHING ===
+# Auto-publish scheduled posts (every 15 min)
+*/15 * * * * curl -s -X POST -H "x-cron-secret: $SECRET" $BASE/api/publish/cron >> /var/www/marketing/logs/cron.log 2>&1
+
+# === BILLING ===
+# Auto-generate invoices (daily 9am, checks billing_day match)
+0 9 * * * curl -s -X POST -H "x-cron-secret: $SECRET" $BASE/api/invoices/auto-generate >> /var/www/marketing/logs/cron.log 2>&1
+
+# === REPORTS ===
+# Weekly report (Mondays 9am)
+0 9 * * 1 curl -s -X POST -H "x-cron-secret: $SECRET" -H "content-type: application/json" -d '{"report_type":"weekly"}' $BASE/api/reports/auto-generate >> /var/www/marketing/logs/cron.log 2>&1
+# Monthly report (1st of month 9am)
+0 9 1 * * curl -s -X POST -H "x-cron-secret: $SECRET" -H "content-type: application/json" -d '{"report_type":"monthly"}' $BASE/api/reports/auto-generate >> /var/www/marketing/logs/cron.log 2>&1
+
+# === MONITORING — TIER 1 (mechanical, free) ===
+# Stuck jobs watchdog (every 10 min)
+*/10 * * * * curl -s -X POST -H "x-cron-secret: $SECRET" $BASE/api/system/check/stuck-jobs >> /var/www/marketing/logs/cron.log 2>&1
+# Failed publishes (hourly)
+5 * * * * curl -s -X POST -H "x-cron-secret: $SECRET" $BASE/api/system/check/failed-publishes >> /var/www/marketing/logs/cron.log 2>&1
+# Token expiry (daily 8am)
+0 8 * * * curl -s -X POST -H "x-cron-secret: $SECRET" $BASE/api/system/check/token-expiry >> /var/www/marketing/logs/cron.log 2>&1
+# Cron heartbeat (every 30 min)
+*/30 * * * * curl -s -X POST -H "x-cron-secret: $SECRET" $BASE/api/system/check/cron-heartbeat >> /var/www/marketing/logs/cron.log 2>&1
+# Disk + memory (every 15 min)
+*/15 * * * * curl -s -X POST -H "x-cron-secret: $SECRET" $BASE/api/system/check/disk-memory >> /var/www/marketing/logs/cron.log 2>&1
+# SSL expiry (daily 6am)
+0 6 * * * curl -s -X POST -H "x-cron-secret: $SECRET" $BASE/api/system/check/ssl-expiry >> /var/www/marketing/logs/cron.log 2>&1
+# DB health (every 5 min)
+*/5 * * * * curl -s -X POST -H "x-cron-secret: $SECRET" $BASE/api/system/check/db-health >> /var/www/marketing/logs/cron.log 2>&1
+# Subscription expiry (daily 9am)
+0 9 * * * curl -s -X POST -H "x-cron-secret: $SECRET" $BASE/api/system/check/subscription-expiry >> /var/www/marketing/logs/cron.log 2>&1
+
+# === MONITORING — TIER 2 (AI-powered, uses Claude API) ===
+# Log analyzer (daily 7am)
+0 7 * * * curl -s -X POST -H "x-cron-secret: $SECRET" $BASE/api/system/check/log-analyzer >> /var/www/marketing/logs/cron.log 2>&1
+# Cost anomaly (daily 8:30am)
+30 8 * * * curl -s -X POST -H "x-cron-secret: $SECRET" $BASE/api/system/check/cost-anomaly >> /var/www/marketing/logs/cron.log 2>&1
+# Content quality (Sundays 10am)
+0 10 * * 0 curl -s -X POST -H "x-cron-secret: $SECRET" $BASE/api/system/check/content-quality >> /var/www/marketing/logs/cron.log 2>&1
+# Audit analyzer (daily 7:30am)
+30 7 * * * curl -s -X POST -H "x-cron-secret: $SECRET" $BASE/api/system/check/audit-analyzer >> /var/www/marketing/logs/cron.log 2>&1
+# Tenant health (Mondays 10am)
+0 10 * * 1 curl -s -X POST -H "x-cron-secret: $SECRET" $BASE/api/system/check/tenant-health >> /var/www/marketing/logs/cron.log 2>&1
+# Failed assessment analyzer (daily 7:15am)
+15 7 * * * curl -s -X POST -H "x-cron-secret: $SECRET" $BASE/api/system/check/failed-assessment >> /var/www/marketing/logs/cron.log 2>&1
+
+# === EMAIL DIGEST ===
+# Daily digest email (7am)
+0 7 * * * curl -s -X POST -H "x-cron-secret: $SECRET" $BASE/api/system/digest >> /var/www/marketing/logs/cron.log 2>&1

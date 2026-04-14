@@ -35,7 +35,7 @@ Generate JSON:
     "content_mix": [{ "type": "", "percentage": 0, "description": "" }]
   }
 }`,
-    { maxTokens: 4096, apiKey }
+    { maxTokens: 8192, apiKey }
   );
   totalTokens += t1;
 
@@ -67,7 +67,7 @@ Generate JSON:
     { "idea": "", "cost": "low|medium|high", "impact": "high|medium", "description": "" }
   ]
 }`,
-    { maxTokens: 6144, apiKey }
+    { maxTokens: 8192, apiKey }
   );
   totalTokens += t2;
 

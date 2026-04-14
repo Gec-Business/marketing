@@ -7,6 +7,12 @@ const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
+  // Lazy cleanup: remove stale entries on every check (max 100 entries, negligible cost)
+  if (loginAttempts.size > 100) {
+    for (const [key, entry] of loginAttempts) {
+      if (now > entry.resetAt) loginAttempts.delete(key);
+    }
+  }
   const entry = loginAttempts.get(ip);
   if (!entry || now > entry.resetAt) {
     loginAttempts.set(ip, { count: 1, resetAt: now + WINDOW_MS });
@@ -15,16 +21,6 @@ function checkRateLimit(ip: string): boolean {
   if (entry.count >= MAX_ATTEMPTS) return false;
   entry.count++;
   return true;
-}
-
-// Clean up stale entries every 30 min
-if (typeof setInterval !== 'undefined') {
-  setInterval(() => {
-    const now = Date.now();
-    for (const [ip, entry] of loginAttempts) {
-      if (now > entry.resetAt) loginAttempts.delete(ip);
-    }
-  }, 30 * 60 * 1000);
 }
 
 export async function POST(req: NextRequest) {

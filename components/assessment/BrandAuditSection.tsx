@@ -1,6 +1,8 @@
 'use client';
 
-export default function BrandAuditSection({ data }: { data: any }) {
+import SubBlockRerun from './SubBlockRerun';
+
+export default function BrandAuditSection({ data, assessmentId, onRefresh }: { data: any; assessmentId?: string; onRefresh?: () => void }) {
   if (!data) return null;
   const cbbe = data.cbbe_scores || {};
   const prism = data.kapferer_prism || {};
@@ -15,7 +17,10 @@ export default function BrandAuditSection({ data }: { data: any }) {
       {/* CBBE Scores */}
       {Object.keys(cbbe).length > 0 && (
         <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="font-semibold text-lg mb-4">Brand Equity Scores (CBBE Model)</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-lg">Brand Equity Scores (CBBE Model)</h3>
+            {assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="brand_audit" block="cbbe_scores" label="CBBE Scores" onComplete={onRefresh} />}
+          </div>
           <div className="space-y-3">
             {Object.entries(cbbe).map(([key, val]: [string, any]) => {
               if (!val || typeof val !== 'object') return null;

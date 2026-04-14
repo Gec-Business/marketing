@@ -18,6 +18,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
+  try {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -69,4 +70,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       'Content-Disposition': `attachment; filename="assessment-${a.tenant_name}.pdf"`,
     },
   });
+  } catch (error: any) {
+    console.error('PDF generation error:', error);
+    return NextResponse.json({ error: 'Failed to generate PDF' }, { status: 500 });
+  }
 }

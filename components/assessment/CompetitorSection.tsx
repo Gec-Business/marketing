@@ -1,6 +1,8 @@
 'use client';
 
-export default function CompetitorSection({ data }: { data: any }) {
+import SubBlockRerun from './SubBlockRerun';
+
+export default function CompetitorSection({ data, assessmentId, onRefresh }: { data: any; assessmentId?: string; onRefresh?: () => void }) {
   if (!data) return null;
   const competitors = data.competitors || [];
   const segments = data.market_segments || [];
@@ -13,7 +15,7 @@ export default function CompetitorSection({ data }: { data: any }) {
       {/* Competitor Cards */}
       {competitors.length > 0 && (
         <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="font-semibold text-lg mb-4">Competitors ({competitors.length})</h3>
+          <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-lg">Competitors ({competitors.length})</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="competitor_data" block="competitors" label="Competitors" onComplete={onRefresh} />}</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {competitors.map((c: any, i: number) => (
               <div key={i} className="border border-gray-200 rounded-lg p-4">
@@ -49,7 +51,7 @@ export default function CompetitorSection({ data }: { data: any }) {
       {/* Your Position */}
       {position.segment && (
         <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="font-semibold text-lg mb-3">Your Competitive Position</h3>
+          <div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-lg">Your Competitive Position</h3>{assessmentId && onRefresh && <SubBlockRerun assessmentId={assessmentId} section="competitor_data" block="tenant_position" label="Position" onComplete={onRefresh} />}</div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
             {position.segment && <div><p className="text-xs text-gray-500">Segment</p><p className="text-sm font-medium">{position.segment}</p></div>}
             {position.rank_estimate && <div><p className="text-xs text-gray-500">Estimated Rank</p><p className="text-sm font-medium">#{position.rank_estimate}</p></div>}
