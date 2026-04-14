@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import CompetitorSection from '@/components/assessment/CompetitorSection';
+import BrandAuditSection from '@/components/assessment/BrandAuditSection';
+import StrategySection from '@/components/assessment/StrategySection';
 
 export default function StrategyPage() {
   const [assessment, setAssessment] = useState<any>(null);
@@ -68,17 +71,26 @@ export default function StrategyPage() {
         </div>
       </div>
 
-      {sections.map(({ key, label, desc }) => {
-        const data = assessment[key];
-        if (!data) return null;
-        return (
-          <div key={key} className="bg-white rounded-xl p-5 shadow-sm mb-4">
-            <h3 className="font-semibold">{label}</h3>
-            <p className="text-xs text-gray-400 mb-3">{desc}</p>
-            <pre className="text-xs bg-gray-50 p-4 rounded-lg overflow-auto max-h-96 whitespace-pre-wrap">{JSON.stringify(data, null, 2)}</pre>
-          </div>
-        );
-      })}
+      {assessment.brand_audit && (
+        <div className="mb-6">
+          <h2 className="text-lg font-bold mb-4">Brand Audit</h2>
+          <BrandAuditSection data={assessment.brand_audit} />
+        </div>
+      )}
+
+      {assessment.competitor_data && (
+        <div className="mb-6">
+          <h2 className="text-lg font-bold mb-4">Competitor Analysis</h2>
+          <CompetitorSection data={assessment.competitor_data} />
+        </div>
+      )}
+
+      {assessment.strategy_data && (
+        <div className="mb-6">
+          <h2 className="text-lg font-bold mb-4">Strategy</h2>
+          <StrategySection data={assessment.strategy_data} />
+        </div>
+      )}
     </div>
   );
 }

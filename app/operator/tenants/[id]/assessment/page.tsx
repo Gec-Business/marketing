@@ -2,6 +2,12 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import ResearchSection from '@/components/assessment/ResearchSection';
+import CompetitorSection from '@/components/assessment/CompetitorSection';
+import BrandAuditSection from '@/components/assessment/BrandAuditSection';
+import StrategySection from '@/components/assessment/StrategySection';
+import RawFallback from '@/components/assessment/RawFallback';
+import RerunButton from '@/components/assessment/RerunButton';
 
 export default function AssessmentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -138,16 +144,57 @@ export default function AssessmentPage({ params }: { params: Promise<{ id: strin
         </div>
       </div>
 
-      {sections.map(({ key, label }) => {
-        const data = assessment[key];
-        if (!data) return null;
-        return (
-          <div key={key} className="bg-white rounded-xl p-5 shadow-sm mb-4">
-            <h3 className="font-semibold mb-3">{label}</h3>
-            <pre className="text-xs bg-gray-50 p-4 rounded-lg overflow-auto max-h-96 whitespace-pre-wrap">{JSON.stringify(data, null, 2)}</pre>
+      {assessment.research_data && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold">Research</h2>
+            <RerunButton assessmentId={assessment.id} agentType="research" label="Research" onComplete={fetchAssessment} />
           </div>
-        );
-      })}
+          {assessment.research_data.parse_error
+            ? <RawFallback data={assessment.research_data} label="Research" />
+            : <ResearchSection data={assessment.research_data} />
+          }
+        </div>
+      )}
+
+      {assessment.competitor_data && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold">Competitor Analysis</h2>
+            <RerunButton assessmentId={assessment.id} agentType="competitor" label="Competitors" onComplete={fetchAssessment} />
+          </div>
+          {assessment.competitor_data.parse_error
+            ? <RawFallback data={assessment.competitor_data} label="Competitor Analysis" />
+            : <CompetitorSection data={assessment.competitor_data} />
+          }
+        </div>
+      )}
+
+      {assessment.brand_audit && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold">Brand Audit</h2>
+            <RerunButton assessmentId={assessment.id} agentType="brand" label="Brand Audit" onComplete={fetchAssessment} />
+          </div>
+          {assessment.brand_audit.parse_error
+            ? <RawFallback data={assessment.brand_audit} label="Brand Audit" />
+            : <BrandAuditSection data={assessment.brand_audit} />
+          }
+        </div>
+      )}
+
+      {assessment.strategy_data && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold">Strategy</h2>
+            <RerunButton assessmentId={assessment.id} agentType="strategy" label="Strategy" onComplete={fetchAssessment} />
+          </div>
+          {assessment.strategy_data.parse_error
+            ? <RawFallback data={assessment.strategy_data} label="Strategy" />
+            : <StrategySection data={assessment.strategy_data} />
+          }
+        </div>
+      )}
 
       {assessment.tokens_used > 0 && (
         <div className="text-xs text-gray-400 text-right">

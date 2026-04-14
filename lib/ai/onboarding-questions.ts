@@ -42,14 +42,18 @@ Industry: "${industry}"
 Generate questions specific to ${industry} businesses. Each question should have:
 - id: snake_case identifier
 - label: the question text
-- type: "text" | "textarea" | "select" | "number"
-- options: array of options (only for select type)
+- type: "text" | "textarea" | "select" | "multiselect" | "number"
+- options: array of options (for select and multiselect types)
 - required: boolean
 - placeholder: example answer
 
-Examples for a restaurant: delivery platforms, menu highlights, branches count, price range
-Examples for real estate: property types, service areas, price range, target buyers
-Examples for beauty: services offered, booking system, specialties
+IMPORTANT: Use "multiselect" (not "select") when the user should be able to pick MULTIPLE answers.
+Examples of multiselect questions: target customer types, services offered, delivery platforms, marketing goals, business sizes served, social media topics.
+Examples of single select questions: price range, business size (single answer), primary cuisine type.
+
+Examples for a restaurant: delivery platforms (multiselect), menu highlights (textarea), branches count (number), price range (select)
+Examples for real estate: property types (multiselect), service areas (multiselect), price range (select), target buyers (multiselect)
+Examples for beauty: services offered (multiselect), booking system (select), specialties (multiselect)
 
 Return JSON array only, no markdown.`;
 
