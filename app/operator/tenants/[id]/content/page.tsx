@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import PostRegenerateButton from '@/components/operator/PostRegenerateButton';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-600',
@@ -24,6 +25,9 @@ export default function ContentPage({ params }: { params: Promise<{ id: string }
   const [count, setCount] = useState(5);
   const [weekStart, setWeekStart] = useState(new Date().toISOString().split('T')[0]);
   const [genImages, setGenImages] = useState(true);
+  const [showBatchRegen, setShowBatchRegen] = useState(false);
+  const [batchDirection, setBatchDirection] = useState('');
+  const [regeneratingBatch, setRegeneratingBatch] = useState(false);
 
   useEffect(() => { fetchPosts(); }, []);
 
@@ -56,6 +60,23 @@ export default function ContentPage({ params }: { params: Promise<{ id: string }
     } finally {
       setGenerating(false);
     }
+  }
+
+  async function regenerateBatch() {
+    if (!batchDirection.trim()) { alert('Please describe what kind of content you want.'); return; }
+    if (!confirm('This will delete all draft posts and generate new ones. Continue?')) return;
+    setRegeneratingBatch(true);
+    try {
+      const res = await fetch('/api/content/regenerate-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenant_id: id, count, week_start: weekStart, direction: batchDirection.trim(), delete_drafts: true }),
+      });
+      if (!res.ok) { const err = await res.json().catch(() => ({})); alert('Failed: ' + (err.error || res.statusText)); return; }
+      setShowBatchRegen(false);
+      setBatchDirection('');
+      await fetchPosts();
+    } catch (e) { alert('Network error.'); } finally { setRegeneratingBatch(false); }
   }
 
   async function approvePost(postId: string) {
@@ -107,7 +128,31 @@ export default function ContentPage({ params }: { params: Promise<{ id: string }
           <button onClick={generateBatch} disabled={generating} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
             {generating ? 'Generating...' : 'Generate'}
           </button>
+          {posts.length > 0 && (
+            <button onClick={() => setShowBatchRegen(!showBatchRegen)} className="px-4 py-2 border border-orange-300 text-orange-600 rounded-lg text-sm hover:bg-orange-50">
+              Re-generate All
+            </button>
+          )}
         </div>
+        {showBatchRegen && (
+          <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <p className="text-sm font-medium text-orange-800 mb-2">Re-generate entire content batch</p>
+            <p className="text-xs text-orange-600 mb-3">This will delete all draft posts and generate fresh content based on your direction.</p>
+            <textarea
+              value={batchDirection}
+              onChange={(e) => setBatchDirection(e.target.value)}
+              placeholder="Describe what kind of content you want this month — e.g., 'focus on client success stories, more educational content, less promotional, include video scenarios for each post, tone should be authoritative but approachable'"
+              rows={3}
+              className="w-full px-3 py-2 border border-orange-200 rounded-lg text-sm bg-white"
+            />
+            <div className="flex gap-2 mt-2">
+              <button onClick={regenerateBatch} disabled={regeneratingBatch} className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 disabled:opacity-50">
+                {regeneratingBatch ? 'Re-generating...' : 'Re-generate with Direction'}
+              </button>
+              <button onClick={() => { setShowBatchRegen(false); setBatchDirection(''); }} className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+            </div>
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -130,9 +175,21 @@ export default function ContentPage({ params }: { params: Promise<{ id: string }
                     </div>
                     {post.scheduled_at && <span className="text-xs text-gray-400">{new Date(post.scheduled_at).toLocaleDateString()}</span>}
                   </div>
-                  <p className="text-sm text-gray-700 line-clamp-2">{post.copy_primary}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-gray-700 line-clamp-2 flex-1">{post.copy_primary}</p>
+                    {post.status === 'draft' && <PostRegenerateButton postId={post.id} component="copy" label="Copy" onComplete={fetchPosts} />}
+                  </div>
                   {post.copy_secondary && <p className="text-xs text-gray-400 mt-1 line-clamp-1">{post.copy_secondary}</p>}
-                  {post.hashtags?.length > 0 && <p className="text-xs text-blue-500 mt-1">{post.hashtags.join(' ')}</p>}
+                  <div className="flex items-center gap-2 mt-1">
+                    {post.hashtags?.length > 0 && <p className="text-xs text-blue-500 flex-1">{post.hashtags.join(' ')}</p>}
+                    {post.status === 'draft' && <PostRegenerateButton postId={post.id} component="hashtags" label="Hashtags" onComplete={fetchPosts} />}
+                  </div>
+                  {post.status === 'draft' && post.video_idea && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-xs text-gray-400 flex-1">Video: {post.video_idea?.concept}</p>
+                      <PostRegenerateButton postId={post.id} component="video" label="Video" onComplete={fetchPosts} />
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 ml-4">
                   {post.generated_image_url && (
