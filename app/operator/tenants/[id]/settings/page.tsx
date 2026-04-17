@@ -12,6 +12,7 @@ export default function TenantSettingsPage({ params }: { params: Promise<{ id: s
   const [city, setCity] = useState('');
   const [postsPerWeek, setPostsPerWeek] = useState(5);
   const [channels, setChannels] = useState<string[]>([]);
+  const [resettingPassword, setResettingPassword] = useState(false);
   const [monthlyFee, setMonthlyFee] = useState('');
   const [billingCurrency, setBillingCurrency] = useState('GEL');
   const [billingStartDate, setBillingStartDate] = useState('');
@@ -163,6 +164,25 @@ export default function TenantSettingsPage({ params }: { params: Promise<{ id: s
     }
   }
 
+  async function resetTenantPassword() {
+    if (!confirm('This will generate a new password and email it to the tenant. Continue?')) return;
+    setResettingPassword(true);
+    try {
+      const res = await fetch(`/api/tenants/${id}/reset-password`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) { alert('Failed: ' + (data.error || res.statusText)); return; }
+      if (data.email_sent) {
+        alert('New password sent to ' + data.sent_to);
+      } else {
+        alert('Password reset but email failed. New password: ' + data.new_password + '\n\nShare this with the client manually.');
+      }
+    } catch (e) {
+      alert('Network error.');
+    } finally {
+      setResettingPassword(false);
+    }
+  }
+
   const allChannels = ['facebook', 'instagram', 'linkedin', 'tiktok'];
 
   function toggleChannel(ch: string) {
@@ -208,9 +228,18 @@ export default function TenantSettingsPage({ params }: { params: Promise<{ id: s
             </div>
           </div>
         </div>
-        <button onClick={saveTenant} disabled={saving} className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
-          {saving ? 'Saving...' : 'Save Settings'}
-        </button>
+        <div className="flex items-center justify-between mt-6">
+          <button onClick={saveTenant} disabled={saving} className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+            {saving ? 'Saving...' : 'Save Settings'}
+          </button>
+          <button
+            onClick={resetTenantPassword}
+            disabled={resettingPassword}
+            className="px-4 py-2 border border-orange-300 text-orange-600 rounded-lg text-sm hover:bg-orange-50 disabled:opacity-50"
+          >
+            {resettingPassword ? 'Resetting...' : 'Reset Client Password'}
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl p-6 shadow-sm max-w-lg mt-6">
