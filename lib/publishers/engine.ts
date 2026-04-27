@@ -118,6 +118,15 @@ async function checkTokenExpiry(tenantId: string, platform: Platform): Promise<v
   const hourBeforeExpiry = new Date(expiresAt.getTime() - 60 * 60 * 1000);
 
   if (now > hourBeforeExpiry) {
+    // Advisory lock prevents two concurrent publishes for the same tenant from
+    // both refreshing the token simultaneously (LinkedIn refresh tokens are one-use).
+    const lockKey = `token-refresh:${tenantId}:${platform}`;
+    const locked = await queryOne<{ acquired: boolean }>(
+      `SELECT pg_try_advisory_lock(hashtext($1)::bigint) AS acquired`, [lockKey]
+    );
+    if (!locked?.acquired) return;
+
+    try {
     const creds = c.credentials;
     if (platform === 'linkedin' && creds.refresh_token) {
       const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
@@ -180,6 +189,9 @@ async function checkTokenExpiry(tenantId: string, platform: Platform): Promise<v
         [JSON.stringify(creds), newExpiry, tenantId]
       );
     }
+    } finally {
+      await query(`SELECT pg_advisory_unlock(hashtext($1)::bigint)`, [lockKey]);
+    }
   }
 }
 
@@ -219,8 +231,17 @@ export async function publishPost(postId: string): Promise<PublishResult[]> {
 }
 
 export async function runAutoPublish(): Promise<{ published: number; failed: number; skipped: number }> {
+  // Atomically claim scheduled posts with FOR UPDATE SKIP LOCKED — prevents concurrent cron
+  // instances from fetching the same posts and publishing them twice.
   const posts = await query(
-    `SELECT * FROM posts WHERE status = 'scheduled' AND scheduled_at <= now() ORDER BY scheduled_at ASC`
+    `UPDATE posts SET status = 'publishing'
+     WHERE id IN (
+       SELECT id FROM posts
+       WHERE status = 'scheduled' AND scheduled_at <= now()
+       ORDER BY scheduled_at ASC
+       FOR UPDATE SKIP LOCKED
+     )
+     RETURNING *`
   );
 
   let published = 0, failed = 0, skipped = 0;
@@ -228,7 +249,6 @@ export async function runAutoPublish(): Promise<{ published: number; failed: num
   for (const post of posts) {
     const p = post as any;
 
-    // Check that tenant has active social connections for the platforms
     const connections = await query(
       `SELECT platform FROM social_connections WHERE tenant_id = $1 AND status = 'active'`,
       [p.tenant_id]
@@ -237,6 +257,7 @@ export async function runAutoPublish(): Promise<{ published: number; failed: num
     const canPublish = (p.platforms as string[]).some(pl => connectedPlatforms.includes(pl));
 
     if (!canPublish) {
+      await query(`UPDATE posts SET status = 'scheduled' WHERE id = $1`, [p.id]);
       skipped++;
       continue;
     }

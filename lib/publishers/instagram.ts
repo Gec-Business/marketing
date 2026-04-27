@@ -33,7 +33,16 @@ export async function postToInstagram(
   const container = await containerRes.json();
   if (container.error) throw new Error(`Instagram container: ${container.error.message}`);
 
-  await new Promise(r => setTimeout(r, 5000));
+  // Poll for container processing instead of fixed sleep
+  for (let i = 0; i < 10; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    const statusRes = await fetch(`${GRAPH_API}/${container.id}?fields=status_code&access_token=${accessToken}`);
+    if (!statusRes.ok) throw new Error(`Instagram status API error: ${statusRes.status}`);
+    const status = await statusRes.json();
+    if (status.status_code === 'FINISHED' || status.status_code === 'READY') break;
+    if (status.status_code === 'ERROR' || status.status_code === 'EXPIRED') throw new Error(`Instagram image processing failed: ${status.status_code}`);
+    if (i === 9) throw new Error('Instagram image processing timed out');
+  }
 
   // Publish
   const pubRes = await fetch(`${GRAPH_API}/${igAccountId}/media_publish`, {
@@ -44,7 +53,7 @@ export async function postToInstagram(
   if (!pubRes.ok) throw new Error(`Instagram publish API error: ${pubRes.status} ${pubRes.statusText}`);
   const pub = await pubRes.json();
   if (pub.error) throw new Error(`Instagram publish: ${pub.error.message}`);
-
+  if (!pub.id) throw new Error('Instagram: No post ID returned from API');
   return { postId: pub.id };
 }
 
@@ -71,7 +80,7 @@ export async function postReelToInstagram(
     if (!statusRes.ok) throw new Error(`Instagram status API error: ${statusRes.status}`);
     const status = await statusRes.json();
     if (status.status_code === 'FINISHED') break;
-    if (status.status_code === 'ERROR') throw new Error('Instagram reel processing failed');
+    if (status.status_code === 'ERROR' || status.status_code === 'EXPIRED') throw new Error(`Instagram reel processing failed: ${status.status_code}`);
     if (i === 19) throw new Error('Instagram reel processing timed out');
   }
 
@@ -83,6 +92,6 @@ export async function postReelToInstagram(
   if (!pubRes.ok) throw new Error(`Instagram reel publish API error: ${pubRes.status} ${pubRes.statusText}`);
   const pub = await pubRes.json();
   if (pub.error) throw new Error(`Instagram reel publish: ${pub.error.message}`);
-
+  if (!pub.id) throw new Error('Instagram reel: No post ID returned from API');
   return { postId: pub.id };
 }

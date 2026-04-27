@@ -58,14 +58,16 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     html,
   });
 
+  if (!emailResult.ok) {
+    console.error(`[reset-password] Email failed for ${tenantUser.email} (${emailResult.error}). New password: ${newPassword}`);
+  }
+
   return NextResponse.json({
     ok: true,
     email_sent: emailResult.ok,
     sent_to: tenantUser.email,
     note: emailResult.ok
       ? 'New password emailed to tenant.'
-      : `Password reset in DB but email failed (${emailResult.error}). New password: ${newPassword}`,
-    // Only show password in response if email failed — so Tea can share it manually
-    ...(emailResult.ok ? {} : { new_password: newPassword }),
+      : `Password reset in DB but email failed (${emailResult.error}). Check server logs for the temporary password.`,
   });
 }

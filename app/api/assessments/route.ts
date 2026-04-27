@@ -129,6 +129,7 @@ async function runAssessmentPipeline(assessmentId: string, tenantId: string, ten
   } catch (error: any) {
     const errorMessage = (error?.message || String(error)).slice(0, 1000);
     await query(`UPDATE assessments SET status = 'failed', error_message = $1 WHERE id = $2`, [errorMessage, assessmentId]);
+    await query(`UPDATE tenants SET status = 'active' WHERE id = $1`, [tenantId]);
     console.error('Assessment pipeline error:', error);
   }
 }
