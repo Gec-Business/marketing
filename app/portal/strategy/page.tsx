@@ -10,6 +10,13 @@ export default function StrategyPage() {
   const [loading, setLoading] = useState(true);
   const [tenantId, setTenantId] = useState<string | null>(null);
 
+  async function fetchAssessment(tid: string) {
+    const res = await fetch(`/api/assessments?tenant_id=${tid}`);
+    const data = await res.json();
+    setAssessment(data.assessment);
+    setLoading(false);
+  }
+
   useEffect(() => {
     fetch('/api/auth/me').then(r => r.json()).then(d => {
       if (d.user?.tenant_id) {
@@ -18,13 +25,6 @@ export default function StrategyPage() {
       }
     });
   }, []);
-
-  async function fetchAssessment(tid: string) {
-    const res = await fetch(`/api/assessments?tenant_id=${tid}`);
-    const data = await res.json();
-    setAssessment(data.assessment);
-    setLoading(false);
-  }
 
   if (loading) return <p className="text-gray-400 text-center py-8">Loading...</p>;
 

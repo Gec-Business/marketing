@@ -9,12 +9,6 @@ export default function TopBar({ userName }: { userName: string }) {
   const [alertCount, setAlertCount] = useState(0);
   const [maxSeverity, setMaxSeverity] = useState<string>('info');
 
-  useEffect(() => {
-    fetchCount();
-    const interval = setInterval(fetchCount, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
   async function fetchCount() {
     try {
       const res = await fetch('/api/system/alerts');
@@ -29,6 +23,13 @@ export default function TopBar({ userName }: { userName: string }) {
       else setMaxSeverity('info');
     } catch {}
   }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchCount();
+    const interval = setInterval(() => { void fetchCount(); }, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' });
