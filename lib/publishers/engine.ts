@@ -167,7 +167,12 @@ async function checkTokenExpiry(tenantId: string, platform: Platform): Promise<v
       }
       const data = await tokenRes.json();
       creds.access_token = data.access_token;
-      if (data.refresh_token) creds.refresh_token = data.refresh_token;
+      if (data.refresh_token) {
+        creds.refresh_token = data.refresh_token;
+        creds.refresh_token_expires_at = data.refresh_expires_in
+          ? new Date(Date.now() + data.refresh_expires_in * 1000).toISOString()
+          : creds.refresh_token_expires_at;
+      }
       if (data.open_id) creds.open_id = data.open_id;
       const newExpiry = data.expires_in ? new Date(Date.now() + data.expires_in * 1000).toISOString() : null;
       await query(

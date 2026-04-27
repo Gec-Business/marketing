@@ -31,9 +31,13 @@ module.exports = {
     env: {
       NODE_ENV: 'production',
       PORT: 3000,
+      HOSTNAME: '0.0.0.0',
       ...loadEnv(),
     },
     max_memory_restart: '1G',
+    wait_ready: true,
+    listen_timeout: 10000,
+    kill_timeout: 5000,
     log_date_format: 'YYYY-MM-DD HH:mm:ss',
     error_file: '/var/www/marketing/logs/error.log',
     out_file: '/var/www/marketing/logs/out.log',

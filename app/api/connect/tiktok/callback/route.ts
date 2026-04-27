@@ -41,7 +41,11 @@ export async function GET(req: NextRequest) {
       JSON.stringify({
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token,
+        refresh_token_expires_at: tokenData.refresh_expires_in
+          ? new Date(Date.now() + tokenData.refresh_expires_in * 1000).toISOString()
+          : null,
         open_id: tokenData.open_id,
+        scope: tokenData.scope,
       }),
       tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString() : null,
     ]

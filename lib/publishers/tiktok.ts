@@ -3,7 +3,9 @@ import { queryOne } from '../db';
 interface TikTokCredentials {
   access_token: string;
   refresh_token?: string;
+  refresh_token_expires_at?: string;
   open_id: string;
+  scope?: string;
 }
 
 async function getCredentials(tenantId: string) {
@@ -22,8 +24,8 @@ export async function postVideoToTikTok(
 ): Promise<{ postId: string }> {
   const { accessToken, openId } = await getCredentials(tenantId);
 
-  // Initialize video upload
-  const initRes = await fetch('https://open.tiktokapis.com/v2/post/publish/video/init/', {
+  // Initialize video upload — use content/init with media_type VIDEO and post_mode
+  const initRes = await fetch('https://open.tiktokapis.com/v2/post/publish/content/init/', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${accessToken}`,
@@ -41,6 +43,8 @@ export async function postVideoToTikTok(
         source: 'PULL_FROM_URL',
         video_url: videoUrl,
       },
+      post_mode: 'DIRECT_POST',
+      media_type: 'VIDEO',
     }),
   });
 
@@ -101,6 +105,7 @@ export async function postPhotoToTikTok(
         photo_cover_index: 0,
         photo_images: imageUrls,
       },
+      post_mode: 'DIRECT_POST',
       media_type: 'PHOTO',
     }),
   });
