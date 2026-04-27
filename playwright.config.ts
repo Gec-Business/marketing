@@ -1,0 +1,15 @@
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './tests/e2e',
+  timeout: 30000,
+  retries: 1,
+  use: {
+    baseURL: process.env.E2E_BASE_URL || 'https://mk.gecbusiness.com',
+    screenshot: 'only-on-failure',
+    video: 'off',
+  },
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+  ],
+});
