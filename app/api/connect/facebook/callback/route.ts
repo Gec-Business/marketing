@@ -17,8 +17,12 @@ export async function GET(req: NextRequest) {
   const appSecret = process.env.META_APP_SECRET;
   const redirectUri = `${process.env.APP_URL}/api/connect/facebook/callback`;
 
-  // Exchange code for token
-  const tokenRes = await fetch(`https://graph.facebook.com/v25.0/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${appSecret}&code=${code}`);
+  // Exchange code for token — POST keeps client_secret out of server logs
+  const tokenRes = await fetch('https://graph.facebook.com/v25.0/oauth/access_token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ client_id: appId!, redirect_uri: redirectUri, client_secret: appSecret!, code }),
+  });
   if (!tokenRes.ok) {
     return new NextResponse(`<html><body><h2>Error</h2><p>Facebook API returned ${tokenRes.status}</p></body></html>`, { headers: { 'Content-Type': 'text/html' } });
   }

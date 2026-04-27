@@ -28,13 +28,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (user.role !== 'operator' && user.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+    const current = await queryOne<{ status: string }>('SELECT status FROM assessments WHERE id = $1', [id]);
+    if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (current.status !== 'review') {
+      return NextResponse.json({ error: `Cannot approve: assessment is in '${current.status}' status` }, { status: 409 });
+    }
     await queryOne('UPDATE assessments SET tea_approved = true WHERE id = $1 RETURNING *', [id]);
   }
 
   if (action === 'tenant_approve') {
-    const assessment = await queryOne<{ tenant_id: string }>('SELECT tenant_id FROM assessments WHERE id = $1', [id]);
-    if (user.role !== 'tenant' || user.tenant_id !== assessment?.tenant_id) {
+    const assessment = await queryOne<{ tenant_id: string; status: string }>('SELECT tenant_id, status FROM assessments WHERE id = $1', [id]);
+    if (!assessment) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (user.role !== 'tenant' || user.tenant_id !== assessment.tenant_id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    if (assessment.status !== 'review') {
+      return NextResponse.json({ error: `Cannot approve: assessment is in '${assessment.status}' status` }, { status: 409 });
     }
     await queryOne('UPDATE assessments SET tenant_approved = true, status = $1 WHERE id = $2 RETURNING *', ['approved', id]);
     await query('UPDATE tenants SET status = $1 WHERE id = $2', ['active', assessment.tenant_id]);

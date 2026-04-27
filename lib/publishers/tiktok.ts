@@ -1,13 +1,18 @@
 import { queryOne } from '../db';
 
+interface TikTokCredentials {
+  access_token: string;
+  refresh_token?: string;
+  open_id: string;
+}
+
 async function getCredentials(tenantId: string) {
-  const conn = await queryOne(
+  const conn = await queryOne<{ credentials: TikTokCredentials }>(
     `SELECT credentials FROM social_connections WHERE tenant_id = $1 AND platform = 'tiktok' AND status = 'active'`,
     [tenantId]
   );
   if (!conn) throw new Error('TikTok not connected');
-  const creds = (conn as any).credentials;
-  return { accessToken: creds.access_token, openId: creds.open_id };
+  return { accessToken: conn.credentials.access_token, openId: conn.credentials.open_id };
 }
 
 export async function postVideoToTikTok(

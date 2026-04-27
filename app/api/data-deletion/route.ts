@@ -7,6 +7,10 @@ const ipAttempts = new Map<string, { count: number; resetAt: number }>();
 const MAX_ATTEMPTS = 5;
 const WINDOW_MS = 60 * 60 * 1000;
 
+// Pending deletion codes — tenant_id → { code, expiresAt }
+// Codes expire after 24 hours. Operator must verify ownership before the second call.
+const pendingCodes = new Map<string, { code: string; expiresAt: number }>();
+
 function rateLimit(ip: string): boolean {
   const now = Date.now();
   const entry = ipAttempts.get(ip);
@@ -89,10 +93,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // First call — return a confirmation code that must be used in second call.
-  // We do NOT return the tenant name to prevent confirming the existence of arbitrary IDs.
+  // First call — generate and store a confirmation code valid for 24 hours.
   if (!confirmation_code) {
     const code = crypto.randomBytes(16).toString('hex');
+    pendingCodes.set(tenant_id, { code, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
     return NextResponse.json({
       message: 'A confirmation code has been generated. To execute deletion, POST again with this confirmation_code AND verify ownership via it@gecbusiness.com.',
       confirmation_code: code,
@@ -100,7 +104,14 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Second call with confirmation_code — actually delete
+  // Second call — validate the stored code before deleting
+  const pending = pendingCodes.get(tenant_id);
+  if (!pending || Date.now() > pending.expiresAt || pending.code !== confirmation_code) {
+    return NextResponse.json({ error: 'Invalid or expired confirmation code.' }, { status: 400 });
+  }
+  pendingCodes.delete(tenant_id);
+
+  // Actually delete
   // Cascade deletes will handle: social_connections, posts, post_comments, assessments,
   // assessment_agents, media_files, invoices, cost_tracking, tenant_reports
   // Users with role='tenant' linked to this tenant will be set to NULL via FK ON DELETE SET NULL,

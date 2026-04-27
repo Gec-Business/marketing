@@ -11,6 +11,8 @@ export async function GET(req: NextRequest) {
   const user = await requireUser();
   const tenantId = req.nextUrl.searchParams.get('tenant_id');
   const status = req.nextUrl.searchParams.get('status');
+  const limit = Math.min(parseInt(req.nextUrl.searchParams.get('limit') ?? '100', 10) || 100, 200);
+  const offset = Math.max(parseInt(req.nextUrl.searchParams.get('offset') ?? '0', 10) || 0, 0);
 
   let sql = 'SELECT * FROM posts WHERE 1=1';
   const params: unknown[] = [];
@@ -33,10 +35,11 @@ export async function GET(req: NextRequest) {
     idx++;
   }
 
-  sql += ' ORDER BY scheduled_at ASC NULLS LAST, sort_order ASC';
+  sql += ` ORDER BY scheduled_at ASC NULLS LAST, sort_order ASC LIMIT $${idx} OFFSET $${idx + 1}`;
+  params.push(limit, offset);
 
   const posts = await query(sql, params);
-  return NextResponse.json({ posts });
+  return NextResponse.json({ posts, limit, offset });
 }
 
 export async function POST(req: NextRequest) {

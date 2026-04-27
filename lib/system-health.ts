@@ -82,7 +82,7 @@ export async function recordHealth(record: HealthRecord): Promise<void> {
       <p><strong>Message:</strong> ${escapeHtml(record.message)}</p>
       ${record.affected_resource ? `<p><strong>Resource:</strong> ${escapeHtml(record.affected_resource)}</p>` : ''}
       <pre style="background:#f3f4f6;padding:12px;border-radius:6px;font-size:12px;overflow:auto">${escapeHtml(JSON.stringify(record.details || {}, null, 2))}</pre>
-      <p><a href="https://mk.gecbusiness.com/operator">Open dashboard</a></p>
+      <p><a href="${process.env.APP_URL ?? 'https://mk.gecbusiness.com'}/operator">Open dashboard</a></p>
     `;
     await sendAlertEmail(`${record.severity.toUpperCase()}: ${record.check_name}`, html);
     await query(`UPDATE system_health SET notified_at = now() WHERE id = $1`, [result.id]);

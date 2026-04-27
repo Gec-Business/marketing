@@ -3,14 +3,19 @@ import { queryOne } from '../db';
 const LI_API = 'https://api.linkedin.com';
 const LI_VERSION = '202602';
 
+interface LinkedInCredentials {
+  access_token: string;
+  refresh_token?: string;
+  org_id: string;
+}
+
 async function getCredentials(tenantId: string) {
-  const conn = await queryOne(
+  const conn = await queryOne<{ credentials: LinkedInCredentials }>(
     `SELECT credentials FROM social_connections WHERE tenant_id = $1 AND platform = 'linkedin' AND status = 'active'`,
     [tenantId]
   );
   if (!conn) throw new Error('LinkedIn not connected');
-  const creds = (conn as any).credentials;
-  return { accessToken: creds.access_token, orgId: creds.org_id };
+  return { accessToken: conn.credentials.access_token, orgId: conn.credentials.org_id };
 }
 
 export async function postToLinkedIn(
@@ -55,7 +60,7 @@ export async function postToLinkedIn(
     }
   }
 
-  const postBody: any = {
+  const postBody: Record<string, unknown> = {
     author,
     commentary: caption,
     visibility: 'PUBLIC',

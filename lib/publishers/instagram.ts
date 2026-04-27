@@ -2,14 +2,18 @@ import { queryOne } from '../db';
 
 const GRAPH_API = 'https://graph.facebook.com/v25.0';
 
+interface InstagramCredentials {
+  ig_account_id: string;
+  access_token: string;
+}
+
 async function getCredentials(tenantId: string) {
-  const conn = await queryOne(
+  const conn = await queryOne<{ credentials: InstagramCredentials }>(
     `SELECT credentials FROM social_connections WHERE tenant_id = $1 AND platform = 'instagram' AND status = 'active'`,
     [tenantId]
   );
   if (!conn) throw new Error('Instagram not connected');
-  const creds = (conn as any).credentials;
-  return { igAccountId: creds.ig_account_id, accessToken: creds.access_token };
+  return { igAccountId: conn.credentials.ig_account_id, accessToken: conn.credentials.access_token };
 }
 
 export async function postToInstagram(

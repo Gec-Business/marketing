@@ -2,14 +2,20 @@ import { queryOne } from '../db';
 
 const GRAPH_API = 'https://graph.facebook.com/v25.0';
 
+interface FacebookCredentials {
+  page_id: string;
+  page_token: string;
+  page_name?: string;
+  user_token?: string;
+}
+
 async function getCredentials(tenantId: string) {
-  const conn = await queryOne(
+  const conn = await queryOne<{ credentials: FacebookCredentials }>(
     `SELECT credentials FROM social_connections WHERE tenant_id = $1 AND platform = 'facebook' AND status = 'active'`,
     [tenantId]
   );
   if (!conn) throw new Error('Facebook not connected');
-  const creds = (conn as any).credentials;
-  return { pageId: creds.page_id, pageToken: creds.page_token };
+  return { pageId: conn.credentials.page_id, pageToken: conn.credentials.page_token };
 }
 
 export async function postToFacebook(
