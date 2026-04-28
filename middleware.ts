@@ -36,7 +36,11 @@ export async function middleware(req: NextRequest) {
     /^\/api\/system\/check\/[a-z0-9-]+\/?$/.test(path);
 
   // Public endpoints (no auth needed) — strict equality
-  const isPublicPath = path === '/api/data-deletion' || path.startsWith('/api/data-deletion/');
+  const isPublicPath =
+    path === '/api/data-deletion' || path.startsWith('/api/data-deletion/') ||
+    path === '/api/connect/facebook/callback' ||
+    path === '/api/connect/linkedin/callback' ||
+    path === '/api/connect/tiktok/callback';
 
   if (path.startsWith('/api/') && !path.startsWith('/api/auth') && !path.startsWith('/api/health') && !isCronPath && !isPublicPath) {
     if (!session.is_logged_in) {

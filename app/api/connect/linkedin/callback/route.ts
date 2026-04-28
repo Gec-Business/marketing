@@ -4,14 +4,26 @@ import { query, queryOne } from '@/lib/db';
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code');
   const state = req.nextUrl.searchParams.get('state');
+  const error = req.nextUrl.searchParams.get('error');
+  const errorDesc = req.nextUrl.searchParams.get('error_description');
+
+  console.log('[linkedin-callback] code:', !!code, 'state:', state, 'error:', error, errorDesc);
+
+  if (error) {
+    return new NextResponse(`<html><body><h2>LinkedIn Error</h2><p>${error}: ${errorDesc}</p></body></html>`, { headers: { 'Content-Type': 'text/html' } });
+  }
 
   const savedState = state ? await queryOne<{ tenant_id: string }>(
     `DELETE FROM oauth_states WHERE state = $1 AND platform = 'linkedin' AND expires_at > now() RETURNING tenant_id`,
     [state]
   ) : null;
 
+  console.log('[linkedin-callback] savedState:', savedState);
+
   if (!code || !savedState) {
-    return new NextResponse('<html><body><h2>Authorization failed</h2><p>Invalid or expired state. Please try again.</p></body></html>', { headers: { 'Content-Type': 'text/html' } });
+    const dbCheck = state ? await queryOne(`SELECT state, expires_at, now() FROM oauth_states WHERE state = $1`, [state]) : null;
+    console.log('[linkedin-callback] DB check (may be already deleted):', dbCheck);
+    return new NextResponse(`<html><body><h2>Authorization failed</h2><p>code: ${!!code}, state: ${!!state}, savedState: ${!!savedState}</p><p>Try again.</p></body></html>`, { headers: { 'Content-Type': 'text/html' } });
   }
 
   const tenantId = savedState.tenant_id;
