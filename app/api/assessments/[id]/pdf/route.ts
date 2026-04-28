@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth';
 import { queryOne } from '@/lib/db';
 import { PDFDocument, rgb } from 'pdf-lib';
+import fontkit from '@pdf-lib/fontkit';
 import { getGeorgianFont } from '@/lib/pdf-font';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -21,6 +22,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   try {
   const pdf = await PDFDocument.create();
+  pdf.registerFontkit(fontkit);
   const georgianFont = getGeorgianFont();
   const font = await pdf.embedFont(georgianFont);
   const fontBold = font;
