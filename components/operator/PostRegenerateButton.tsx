@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 interface Props {
   postId: string;
-  component: 'copy' | 'hashtags' | 'visual' | 'video' | 'platform_copies';
+  component: 'copy' | 'hashtags' | 'visual' | 'video' | 'platform_copies' | 'image';
   label: string;
   onComplete: () => void;
 }

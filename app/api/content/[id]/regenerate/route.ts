@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireOperator } from '@/lib/auth';
 import { queryOne } from '@/lib/db';
 import { askClaude } from '@/lib/ai/client';
+import { generatePostImage } from '@/lib/images/generator';
 import { getApiKeysForTenant } from '@/lib/api-keys';
 import { sanitizeForPrompt } from '@/lib/ai/sanitize';
 import { parseAIJson } from '@/lib/ai/parse-json';
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const { component, feedback } = await req.json();
 
-  const validComponents = ['copy', 'hashtags', 'visual', 'video', 'platform_copies'];
+  const validComponents = ['copy', 'hashtags', 'visual', 'video', 'platform_copies', 'image'];
   if (!component || !validComponents.includes(component)) {
     return NextResponse.json({ error: `component must be one of: ${validComponents.join(', ')}` }, { status: 400 });
   }
@@ -106,6 +107,21 @@ ${safeFeedback ? `Operator feedback: "${safeFeedback}"` : 'Optimize for each pla
 
 Return JSON: { ${post.platforms.map(p => `"${p}": { "primary": "${lang1} text", "secondary": "${lang2} text" }`).join(', ')} }`;
       break;
+  }
+
+  // Image generation is separate — no Claude call needed, just DALL-E
+  if (component === 'image') {
+    const tenant = await queryOne<{ name: string; brand_config: any }>(
+      'SELECT name, brand_config FROM tenants WHERE id = $1', [post.tenant_id]
+    );
+    const description = (post as any).visual_description || post.copy_primary?.slice(0, 300) || 'Professional social media post';
+    try {
+      const { url } = await generatePostImage(post.tenant_id, description, tenant?.brand_config || {}, apiKeys.openai);
+      await queryOne('UPDATE posts SET generated_image_url = $1 WHERE id = $2', [url, id]);
+      return NextResponse.json({ ok: true, component: 'image', generated_image_url: url });
+    } catch (e: any) {
+      return NextResponse.json({ error: 'Image generation failed: ' + e.message }, { status: 500 });
+    }
   }
 
   try {

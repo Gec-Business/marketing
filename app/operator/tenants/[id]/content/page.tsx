@@ -192,8 +192,12 @@ export default function ContentPage({ params }: { params: Promise<{ id: string }
                   )}
                 </div>
                 <div className="flex items-center gap-2 ml-4">
-                  {post.generated_image_url && (
-                    <img src={post.generated_image_url} alt="" className="w-16 h-16 rounded-lg object-cover" />
+                  {post.generated_image_url ? (
+                    <a href={post.generated_image_url} target="_blank" rel="noreferrer">
+                      <img src={post.generated_image_url} alt="" className="w-16 h-16 rounded-lg object-cover hover:opacity-80" />
+                    </a>
+                  ) : post.status === 'draft' && (
+                    <PostRegenerateButton postId={post.id} component="image" label="Image" onComplete={fetchPosts} />
                   )}
                   {post.status === 'draft' && (
                     <>
