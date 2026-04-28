@@ -50,10 +50,10 @@ export async function POST(req: NextRequest) {
   if (!tenant) return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
 
   const assessment = await queryOne<Assessment>(
-    'SELECT * FROM assessments WHERE tenant_id = $1 AND status = $2 ORDER BY created_at DESC LIMIT 1',
-    [tenant_id, 'approved']
+    `SELECT * FROM assessments WHERE tenant_id = $1 AND (status = 'approved' OR tea_approved = true) ORDER BY created_at DESC LIMIT 1`,
+    [tenant_id]
   );
-  if (!assessment) return NextResponse.json({ error: 'No approved assessment found. Run and approve an assessment first.' }, { status: 400 });
+  if (!assessment) return NextResponse.json({ error: 'No approved assessment found. Run the assessment and click Approve first.' }, { status: 400 });
 
   const safeCount = Math.min(Math.max(count || tenant.posts_per_week, 1), 30);
   const apiKeys = await getApiKeysForTenant(tenant_id);

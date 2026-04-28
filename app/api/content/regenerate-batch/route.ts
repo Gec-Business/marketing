@@ -23,11 +23,11 @@ export async function POST(req: NextRequest) {
   if (!tenant) return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
 
   const assessment = await queryOne<Assessment>(
-    'SELECT * FROM assessments WHERE tenant_id = $1 AND status = $2 ORDER BY created_at DESC LIMIT 1',
-    [tenant_id, 'approved']
+    `SELECT * FROM assessments WHERE tenant_id = $1 AND (status = 'approved' OR tea_approved = true) ORDER BY created_at DESC LIMIT 1`,
+    [tenant_id]
   );
   if (!assessment) {
-    return NextResponse.json({ error: 'No approved assessment found.' }, { status: 400 });
+    return NextResponse.json({ error: 'No approved assessment found. Run the assessment and click Approve first.' }, { status: 400 });
   }
 
   // Delete existing draft posts if requested

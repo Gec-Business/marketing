@@ -53,7 +53,7 @@ export default function ContentPage({ params }: { params: Promise<{ id: string }
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tenant_id: id, count, week_start: weekStart, generate_images: genImages }),
       });
-      if (!res.ok) { alert('Content generation failed. Please try again.'); return; }
+      if (!res.ok) { const err = await res.json().catch(() => ({})); alert('Content generation failed: ' + (err.error || res.statusText)); return; }
       await fetchPosts();
     } catch (e) {
       alert('Network error during generation.');
