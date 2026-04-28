@@ -1,18 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireOperator } from '@/lib/auth';
-import { queryOne } from '@/lib/db';
+import { query, queryOne } from '@/lib/db';
 
 export async function GET(req: NextRequest) {
   await requireOperator();
   const code = req.nextUrl.searchParams.get('code');
   const state = req.nextUrl.searchParams.get('state');
-  const savedState = req.cookies.get('tt_oauth_state')?.value;
 
-  if (!code || !state || state !== savedState) {
-    return new NextResponse('<html><body><h2>Authorization failed</h2></body></html>', { headers: { 'Content-Type': 'text/html' } });
+  const savedState = state ? await queryOne<{ tenant_id: string }>(
+    `DELETE FROM oauth_states WHERE state = $1 AND platform = 'tiktok' AND expires_at > now() RETURNING tenant_id`,
+    [state]
+  ) : null;
+
+  if (!code || !savedState) {
+    return new NextResponse('<html><body><h2>Authorization failed</h2><p>Invalid or expired state. Please try again.</p></body></html>', { headers: { 'Content-Type': 'text/html' } });
   }
 
-  const tenantId = state.split(':')[0];
+  const tenantId = savedState.tenant_id;
 
   const tokenRes = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
     method: 'POST',
@@ -31,11 +35,10 @@ export async function GET(req: NextRequest) {
     return new NextResponse(`<html><body><h2>Error</h2><p>${tokenData.error_description}</p></body></html>`, { headers: { 'Content-Type': 'text/html' } });
   }
 
-  await queryOne(
+  await query(
     `INSERT INTO social_connections (tenant_id, platform, credentials, expires_at)
      VALUES ($1, 'tiktok', $2, $3)
-     ON CONFLICT (tenant_id, platform) DO UPDATE SET credentials = $2, connected_at = now(), expires_at = $3, status = 'active'
-     RETURNING *`,
+     ON CONFLICT (tenant_id, platform) DO UPDATE SET credentials = $2, connected_at = now(), expires_at = $3, status = 'active'`,
     [
       tenantId,
       JSON.stringify({
@@ -51,10 +54,8 @@ export async function GET(req: NextRequest) {
     ]
   );
 
-  const response = new NextResponse(
+  return new NextResponse(
     '<html><body><h2>TikTok Connected!</h2><script>setTimeout(() => window.close(), 3000);</script></body></html>',
     { headers: { 'Content-Type': 'text/html' } }
   );
-  response.cookies.delete('tt_oauth_state');
-  return response;
 }
