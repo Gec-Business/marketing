@@ -80,6 +80,9 @@ export default function ConnectPage({ params }: { params: Promise<{ id: string }
                   )}
                 </div>
                 <p className="text-sm text-gray-500">{p.desc}</p>
+                {conn?.page_name && (
+                  <p className="text-xs text-blue-600 mt-1">📄 {conn.page_name}</p>
+                )}
                 {conn?.connected_at && (
                   <p className="text-xs text-gray-400 mt-1">Connected: {new Date(conn.connected_at).toLocaleDateString()}</p>
                 )}

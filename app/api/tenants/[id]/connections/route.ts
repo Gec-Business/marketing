@@ -6,7 +6,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   await requireOperator();
   const { id } = await params;
   const connections = await query(
-    `SELECT platform, status, connected_at, expires_at FROM social_connections WHERE tenant_id = $1`,
+    `SELECT platform, status, connected_at, expires_at,
+      CASE WHEN platform = 'facebook' THEN credentials->>'page_name' ELSE NULL END AS page_name
+     FROM social_connections WHERE tenant_id = $1`,
     [id]
   );
   return NextResponse.json({ connections });
