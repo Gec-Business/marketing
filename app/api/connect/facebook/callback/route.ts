@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireOperator } from '@/lib/auth';
 import { query, queryOne } from '@/lib/db';
 
 export async function GET(req: NextRequest) {
-  await requireOperator();
   const code = req.nextUrl.searchParams.get('code');
   const state = req.nextUrl.searchParams.get('state');
 
