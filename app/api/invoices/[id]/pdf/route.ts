@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth';
 import { queryOne } from '@/lib/db';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, rgb } from 'pdf-lib';
+import { getGeorgianFont } from '@/lib/pdf-font';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -21,8 +22,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   try {
   const pdf = await PDFDocument.create();
   const page = pdf.addPage([595, 842]); // A4
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const georgianFont = getGeorgianFont();
+  const font = await pdf.embedFont(georgianFont);
+  const fontBold = font;
   const { height } = page.getSize();
 
   let y = height - 50;
