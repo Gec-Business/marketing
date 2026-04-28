@@ -1,4 +1,5 @@
 import { askClaude } from './client';
+import { parseAIJson } from './parse-json';
 import { sanitizeTenantForPrompt } from './sanitize';
 import type { Tenant } from '../types';
 
@@ -71,13 +72,9 @@ Generate JSON:
   );
   totalTokens += t2;
 
-  try {
-    const clean1 = text1.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');
-    const clean2 = text2.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');
-    const part1 = JSON.parse(clean1);
-    const part2 = JSON.parse(clean2);
-    return { data: { ...part1, ...part2 }, tokensUsed: totalTokens };
-  } catch {
-    return { data: { part1: text1, part2: text2, parse_error: true }, tokensUsed: totalTokens };
-  }
+  const r1 = parseAIJson(text1);
+  const r2 = parseAIJson(text2);
+  const part1 = r1.success ? r1.parsed : {};
+  const part2 = r2.success ? r2.parsed : {};
+  return { data: { ...part1, ...part2 }, tokensUsed: totalTokens };
 }
