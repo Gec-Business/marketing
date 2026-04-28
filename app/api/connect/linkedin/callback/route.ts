@@ -7,8 +7,6 @@ export async function GET(req: NextRequest) {
   const error = req.nextUrl.searchParams.get('error');
   const errorDesc = req.nextUrl.searchParams.get('error_description');
 
-  console.log('[linkedin-callback] code:', !!code, 'state:', state, 'error:', error, errorDesc);
-
   if (error) {
     return new NextResponse(`<html><body><h2>LinkedIn Error</h2><p>${error}: ${errorDesc}</p></body></html>`, { headers: { 'Content-Type': 'text/html' } });
   }
@@ -18,12 +16,8 @@ export async function GET(req: NextRequest) {
     [state]
   ) : null;
 
-  console.log('[linkedin-callback] savedState:', savedState);
-
   if (!code || !savedState) {
-    const dbCheck = state ? await queryOne(`SELECT state, expires_at, now() FROM oauth_states WHERE state = $1`, [state]) : null;
-    console.log('[linkedin-callback] DB check (may be already deleted):', dbCheck);
-    return new NextResponse(`<html><body><h2>Authorization failed</h2><p>code: ${!!code}, state: ${!!state}, savedState: ${!!savedState}</p><p>Try again.</p></body></html>`, { headers: { 'Content-Type': 'text/html' } });
+    return new NextResponse('<html><body><h2>Authorization failed</h2><p>Invalid or expired state. Please try again.</p></body></html>', { headers: { 'Content-Type': 'text/html' } });
   }
 
   const tenantId = savedState.tenant_id;
@@ -45,6 +39,13 @@ export async function GET(req: NextRequest) {
     return new NextResponse(`<html><body><h2>Error</h2><p>${tokenData.error_description}</p></body></html>`, { headers: { 'Content-Type': 'text/html' } });
   }
 
+  // Fetch member's person ID via OpenID userinfo
+  const meRes = await fetch('https://api.linkedin.com/v2/userinfo', {
+    headers: { Authorization: `Bearer ${tokenData.access_token}` },
+  });
+  const meData = meRes.ok ? await meRes.json() : {};
+  const personId = meData.sub || null;
+
   await query(
     `INSERT INTO social_connections (tenant_id, platform, credentials, expires_at)
      VALUES ($1, 'linkedin', $2, $3)
@@ -54,6 +55,7 @@ export async function GET(req: NextRequest) {
       JSON.stringify({
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token,
+        person_id: personId,
         org_id: process.env.LINKEDIN_ORG_ID,
       }),
       tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString() : null,

@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
   const clientId = process.env.LINKEDIN_CLIENT_ID;
   const redirectUri = `${process.env.APP_URL}/api/connect/linkedin/callback`;
-  const scopes = 'openid profile w_member_social w_organization_social';
+  const scopes = 'openid profile w_member_social';
   const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&state=${state}`;
 
   return NextResponse.redirect(authUrl);

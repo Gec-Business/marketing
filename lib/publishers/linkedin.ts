@@ -6,7 +6,8 @@ const LI_VERSION = '202602';
 interface LinkedInCredentials {
   access_token: string;
   refresh_token?: string;
-  org_id: string;
+  person_id?: string;
+  org_id?: string;
 }
 
 async function getCredentials(tenantId: string) {
@@ -15,7 +16,12 @@ async function getCredentials(tenantId: string) {
     [tenantId]
   );
   if (!conn) throw new Error('LinkedIn not connected');
-  return { accessToken: conn.credentials.access_token, orgId: conn.credentials.org_id };
+  const { access_token, person_id, org_id } = conn.credentials;
+  // Use person URN (w_member_social) — org posting requires app review
+  const author = person_id
+    ? `urn:li:person:${person_id}`
+    : `urn:li:organization:${org_id}`;
+  return { accessToken: access_token, author };
 }
 
 export async function postToLinkedIn(
@@ -23,8 +29,7 @@ export async function postToLinkedIn(
   caption: string,
   imageUrl?: string
 ): Promise<{ postId: string }> {
-  const { accessToken, orgId } = await getCredentials(tenantId);
-  const author = `urn:li:organization:${orgId}`;
+  const { accessToken, author } = await getCredentials(tenantId);
 
   const headers: Record<string, string> = {
     'Authorization': `Bearer ${accessToken}`,
