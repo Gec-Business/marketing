@@ -1,5 +1,4 @@
 import OpenAI from 'openai';
-import { query } from '../db';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -14,14 +13,39 @@ function getOpenAIClient(apiKey?: string): OpenAI {
   return globalOpenai;
 }
 
+export interface VisualDirection {
+  photography_style?: string;
+  graphic_style?: string;
+  color_application_guidelines?: string;
+  stop_doing_visually?: string[];
+}
+
 export async function generatePostImage(
   tenantId: string,
   description: string,
   brandConfig: Record<string, unknown>,
-  apiKey?: string
+  apiKey?: string,
+  visualDirection?: VisualDirection
 ): Promise<{ url: string; localPath: string; cost: number }> {
   const openai = getOpenAIClient(apiKey);
-  const prompt = `${description}. Style: professional social media post, clean modern design. ${brandConfig.colors ? `Brand colors: ${brandConfig.colors}` : ''}`.slice(0, 4000);
+
+  const styleParts: string[] = [];
+
+  if (visualDirection?.photography_style) styleParts.push(visualDirection.photography_style);
+  if (visualDirection?.graphic_style)     styleParts.push(visualDirection.graphic_style);
+  if (visualDirection?.color_application_guidelines) styleParts.push(`Color use: ${visualDirection.color_application_guidelines}`);
+  if (brandConfig?.colors) styleParts.push(`Brand colors: ${brandConfig.colors}`);
+
+  const avoidParts: string[] = [];
+  if (visualDirection?.stop_doing_visually?.length) avoidParts.push(...visualDirection.stop_doing_visually);
+
+  const styleGuide = styleParts.length
+    ? styleParts.join('. ')
+    : 'professional social media post, clean modern design';
+
+  const avoidGuide = avoidParts.length ? ` Avoid: ${avoidParts.join(', ')}.` : '';
+
+  const prompt = `${description}. ${styleGuide}.${avoidGuide} Square 1:1 format, optimized for social media. No text overlays.`.slice(0, 4000);
 
   const response = await openai.images.generate({
     model: 'dall-e-3',
@@ -44,9 +68,5 @@ export async function generatePostImage(
   const filePath = path.join(dir, filename);
   await fs.writeFile(filePath, buffer);
 
-  const cost = 0.04;
-  // Note: cost tracking is done by the caller (content route) so it can be aggregated
-  // and properly attributed via billed_to. This function only returns the cost.
-
-  return { url: `/uploads/generated/${filename}`, localPath: filePath, cost };
+  return { url: `/uploads/generated/${filename}`, localPath: filePath, cost: 0.04 };
 }

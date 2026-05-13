@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useRef } from 'react';
 import Link from 'next/link';
 
 export default function TenantSettingsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -24,6 +24,12 @@ export default function TenantSettingsPage({ params }: { params: Promise<{ id: s
   const [anthropicKey, setAnthropicKey] = useState('');
   const [openaiKey, setOpenaiKey] = useState('');
   const [savingKeys, setSavingKeys] = useState(false);
+
+  // Brand config
+  const [brandConfig, setBrandConfig] = useState<any>({});
+  const [savingBrand, setSavingBrand] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { fetchTenant(); fetchKeyStatus(); }, []);
 
@@ -96,6 +102,7 @@ export default function TenantSettingsPage({ params }: { params: Promise<{ id: s
       setBillingDurationMonths(t.billing_duration_months != null ? String(t.billing_duration_months) : '');
       setAutoInvoice(t.auto_invoice !== false);
       setAutoReports(t.auto_reports !== false);
+      setBrandConfig(t.brand_config || {});
     } catch (e) {
       console.error('Fetch tenant error:', e);
     } finally {
@@ -180,6 +187,39 @@ export default function TenantSettingsPage({ params }: { params: Promise<{ id: s
       alert('Network error.');
     } finally {
       setResettingPassword(false);
+    }
+  }
+
+  async function saveBrandConfig() {
+    setSavingBrand(true);
+    try {
+      const res = await fetch(`/api/tenants/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brand_config: brandConfig }),
+      });
+      if (!res.ok) { alert('Failed to save brand config'); return; }
+      alert('Brand config saved.');
+    } catch (e) {
+      alert('Network error.');
+    } finally {
+      setSavingBrand(false);
+    }
+  }
+
+  async function uploadLogo(file: File) {
+    setUploadingLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`/api/tenants/${id}/logo`, { method: 'POST', body: formData });
+      if (!res.ok) { alert('Logo upload failed'); return; }
+      const { logo_url } = await res.json();
+      setBrandConfig((prev: any) => ({ ...prev, logo_url }));
+    } catch (e) {
+      alert('Network error.');
+    } finally {
+      setUploadingLogo(false);
     }
   }
 
@@ -348,6 +388,76 @@ export default function TenantSettingsPage({ params }: { params: Promise<{ id: s
           className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
         >
           {savingKeys ? 'Saving...' : 'Save API Keys'}
+        </button>
+      </div>
+
+      {/* Brand Config */}
+      <div className="bg-white rounded-xl p-6 shadow-sm max-w-lg mt-6">
+        <h2 className="text-lg font-semibold mb-1">Brand Config</h2>
+        <p className="text-xs text-gray-500 mb-4">Logo, colors, and fonts used for content generation and image prompts.</p>
+
+        {/* Logo */}
+        <div className="mb-5">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Logo</label>
+          <div className="flex items-center gap-4">
+            {brandConfig.logo_url ? (
+              <div className="relative w-20 h-20 rounded-lg border bg-gray-50 flex items-center justify-center overflow-hidden">
+                <img src={brandConfig.logo_url} alt="Logo" className="max-w-full max-h-full object-contain p-1" />
+              </div>
+            ) : (
+              <div className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center text-xs text-gray-400">No logo</div>
+            )}
+            <div>
+              <button onClick={() => logoInputRef.current?.click()} disabled={uploadingLogo}
+                className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50">
+                {uploadingLogo ? 'Uploading...' : brandConfig.logo_url ? 'Replace Logo' : 'Upload Logo'}
+              </button>
+              <p className="text-xs text-gray-400 mt-1">PNG, SVG, or WebP. Max 5MB.</p>
+              <input ref={logoInputRef} type="file" accept="image/png,image/webp,image/svg+xml,image/jpeg" className="hidden"
+                onChange={e => e.target.files?.[0] && uploadLogo(e.target.files[0])} />
+            </div>
+          </div>
+        </div>
+
+        {/* Colors */}
+        <div className="mb-5">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Brand Colors</label>
+          <div className="grid grid-cols-3 gap-3">
+            {(['primary_color', 'secondary_color', 'accent_color'] as const).map((key) => (
+              <div key={key}>
+                <label className="text-xs text-gray-500 block mb-1 capitalize">{key.replace('_color', '')}</label>
+                <div className="flex items-center gap-2">
+                  <input type="color" value={brandConfig[key] || '#000000'}
+                    onChange={e => setBrandConfig((p: any) => ({ ...p, [key]: e.target.value }))}
+                    className="w-9 h-9 rounded border cursor-pointer" />
+                  <input type="text" value={brandConfig[key] || ''}
+                    onChange={e => setBrandConfig((p: any) => ({ ...p, [key]: e.target.value }))}
+                    placeholder="#000000" className="flex-1 px-2 py-1.5 border rounded text-xs font-mono" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Fonts + Tagline */}
+        <div className="space-y-3 mb-5">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Primary Font</label>
+            <input type="text" value={brandConfig.font_primary || ''}
+              onChange={e => setBrandConfig((p: any) => ({ ...p, font_primary: e.target.value }))}
+              placeholder="e.g. Helvetica Neue, Montserrat" className="w-full px-3 py-2 border rounded-lg text-sm" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Tagline</label>
+            <input type="text" value={brandConfig.tagline || ''}
+              onChange={e => setBrandConfig((p: any) => ({ ...p, tagline: e.target.value }))}
+              placeholder="e.g. Grow with purpose" className="w-full px-3 py-2 border rounded-lg text-sm" />
+          </div>
+        </div>
+
+        <button onClick={saveBrandConfig} disabled={savingBrand}
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+          {savingBrand ? 'Saving...' : 'Save Brand Config'}
         </button>
       </div>
     </div>

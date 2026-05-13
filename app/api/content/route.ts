@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireOperator, requireUser } from '@/lib/auth';
 import { query, queryOne } from '@/lib/db';
 import { generateContentBatch } from '@/lib/ai/content-generator';
-import { generatePostImage } from '@/lib/images/generator';
+import { generatePostImage, type VisualDirection } from '@/lib/images/generator';
 import { getApiKeysForTenant } from '@/lib/api-keys';
 import { v4 as uuid } from 'uuid';
 import type { Tenant, Assessment } from '@/lib/types';
@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
 
   const safeCount = Math.min(Math.max(count || tenant.posts_per_week, 1), 30);
   const apiKeys = await getApiKeysForTenant(tenant_id);
+  const visualDirection = (assessment.strategy_data as any)?.visual_direction as VisualDirection | undefined;
   const { posts: generated, tokensUsed } = await generateContentBatch(tenant, assessment, safeCount, week_start, apiKeys.anthropic);
 
   if (generated.length === 0) {
@@ -69,12 +70,19 @@ export async function POST(req: NextRequest) {
 
   for (const post of generated) {
     let generatedImageUrl = null;
-    if (generate_images && post.visual_description && post.content_type === 'image_post') {
+
+    // Prefer real asset over DALL-E when Claude picked one
+    if (post.asset_id) {
+      const asset = await queryOne<{ url: string }>('SELECT url FROM assets WHERE id = $1 AND tenant_id = $2', [post.asset_id, tenant_id]);
+      if (asset) generatedImageUrl = asset.url;
+    }
+
+    if (!generatedImageUrl && generate_images && post.visual_description && post.content_type === 'image_post') {
       if (!apiKeys.openai) {
         console.warn('Skipping image generation: no OpenAI API key configured (tenant/operator/global all empty)');
       } else {
         try {
-          const { url } = await generatePostImage(tenant_id, post.visual_description, tenant.brand_config, apiKeys.openai);
+          const { url } = await generatePostImage(tenant_id, post.visual_description, tenant.brand_config, apiKeys.openai, visualDirection);
           generatedImageUrl = url;
           imagesGenerated++;
         } catch (e) {

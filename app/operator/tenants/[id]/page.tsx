@@ -10,11 +10,13 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   const t = tenant as any;
   const assessment = await queryOne('SELECT id, status, tea_approved, tenant_approved FROM assessments WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT 1', [id]);
   const postCount = await queryOne('SELECT COUNT(*) as count FROM posts WHERE tenant_id = $1', [id]);
+  const assetCount = await queryOne('SELECT COUNT(*) as count FROM assets WHERE tenant_id = $1', [id]);
 
   const actions = [
     { href: `/operator/tenants/${id}/assessment`, label: 'Assessment', desc: assessment ? `Status: ${(assessment as any).status}` : 'Not started' },
     { href: `/operator/tenants/${id}/strategy`, label: 'Strategy', desc: 'View & approve strategy' },
     { href: `/operator/tenants/${id}/content`, label: 'Content', desc: `${(postCount as any)?.count || 0} posts` },
+    { href: `/operator/tenants/${id}/assets`, label: 'Asset Studio', desc: `${(assetCount as any)?.count || 0} photos` },
     { href: `/operator/tenants/${id}/connect`, label: 'Connect Accounts', desc: 'Social media accounts' },
     { href: `/operator/tenants/${id}/reports`, label: 'Reports', desc: 'Weekly + monthly summaries' },
     { href: `/operator/tenants/${id}/invoices`, label: 'Invoices', desc: 'Billing' },
