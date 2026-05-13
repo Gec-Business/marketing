@@ -47,7 +47,9 @@ export default function OnboardingWizard({ baseQuestions }: { baseQuestions: Onb
       name: answers.name,
       slug,
       industry: answers.industry,
+      sub_category: answers.sub_category || null,
       city: answers.city || 'Tbilisi',
+      neighborhood: answers.neighborhood || null,
       website: answers.website || null,
       google_maps_url: answers.google_maps_url || null,
       channels: answers.channels || [],
@@ -55,6 +57,11 @@ export default function OnboardingWizard({ baseQuestions }: { baseQuestions: Onb
       posts_per_week: parseInt(answers.posts_per_week) || 5,
       video_ideas_per_month: parseInt(answers.video_ideas_per_month) || 4,
       primary_language: answers.primary_language || 'ka',
+      secondary_language: answers.secondary_language !== 'none' ? (answers.secondary_language || 'en') : null,
+      price_positioning: answers.price_positioning || null,
+      usp: answers.usp || null,
+      marketing_goal: answers.marketing_goal || null,
+      delivery_platforms: answers.delivery_platforms || [],
       tenant_email: answers.tenant_email,
       tenant_password: answers.tenant_password,
       social_links: {
@@ -65,6 +72,14 @@ export default function OnboardingWizard({ baseQuestions }: { baseQuestions: Onb
       },
       onboarding_data: {
         target_audience: answers.target_audience,
+        marketing_budget: answers.marketing_budget || null,
+        paid_ads_before: answers.paid_ads_before || null,
+        operating_hours: {
+          weekday: answers.operating_hours_weekday || null,
+          weekend: answers.operating_hours_weekend || null,
+        },
+        client_competitors: answers.client_competitors || null,
+        brand_assets: answers.brand_assets || [],
         industry_answers: Object.fromEntries(
           industryQuestions.map((q) => [q.id, answers[q.id]])
         ),

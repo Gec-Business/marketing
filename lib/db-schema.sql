@@ -20,6 +20,12 @@ CREATE TABLE tenants (
     video_ideas_per_month INT DEFAULT 4,
     primary_language TEXT DEFAULT 'ka',
     secondary_language TEXT DEFAULT 'en',
+    sub_category TEXT,
+    neighborhood TEXT,
+    price_positioning TEXT CHECK (price_positioning IN ('budget','mid-range','premium','luxury')),
+    usp TEXT,
+    marketing_goal TEXT CHECK (marketing_goal IN ('awareness','followers','leads','sales','retention')),
+    delivery_platforms TEXT[] DEFAULT '{}',
     status TEXT DEFAULT 'onboarding'
         CHECK (status IN ('onboarding','assessing','strategy_review','active','paused','churned')),
     onboarding_data JSONB DEFAULT '{}',

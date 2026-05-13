@@ -11,7 +11,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   await requireOperator();
   const body = await req.json();
-  const { name, slug, industry, city, channels, posting_frequency, posts_per_week, video_ideas_per_month, primary_language, secondary_language, website, google_maps_url, social_links, target_audience, onboarding_data, tenant_email, tenant_password, monthly_fee, billing_currency, billing_start_date, billing_duration_months } = body;
+  const { name, slug, industry, city, channels, posting_frequency, posts_per_week, video_ideas_per_month, primary_language, secondary_language, sub_category, neighborhood, price_positioning, usp, marketing_goal, delivery_platforms, website, google_maps_url, social_links, target_audience, onboarding_data, tenant_email, tenant_password, monthly_fee, billing_currency, billing_start_date, billing_duration_months } = body;
 
   if (!name || !slug || !industry || !tenant_email || !tenant_password) {
     return NextResponse.json({ error: 'Missing required fields: name, slug, industry, tenant_email, tenant_password' }, { status: 400 });
@@ -26,8 +26,8 @@ export async function POST(req: NextRequest) {
   const billingDay = billing_start_date ? Math.min(new Date(billing_start_date).getDate(), 28) : 1;
 
   const tenant = await queryOne<{ id: string }>(
-    `INSERT INTO tenants (name, slug, industry, city, channels, posting_frequency, posts_per_week, video_ideas_per_month, primary_language, secondary_language, website, google_maps_url, social_links, onboarding_data, api_keys, monthly_fee, billing_currency, billing_start_date, billing_duration_months, billing_day)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, '{}'::jsonb, $15, $16, $17, $18, $19)
+    `INSERT INTO tenants (name, slug, industry, city, channels, posting_frequency, posts_per_week, video_ideas_per_month, primary_language, secondary_language, sub_category, neighborhood, price_positioning, usp, marketing_goal, delivery_platforms, website, google_maps_url, social_links, onboarding_data, api_keys, monthly_fee, billing_currency, billing_start_date, billing_duration_months, billing_day)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, '{}'::jsonb, $21, $22, $23, $24, $25)
      RETURNING *`,
     [
       name, slug, industry,
@@ -38,6 +38,12 @@ export async function POST(req: NextRequest) {
       video_ideas_per_month || 4,
       primary_language || 'ka',
       secondary_language || 'en',
+      sub_category || null,
+      neighborhood || null,
+      price_positioning || null,
+      usp || null,
+      marketing_goal || null,
+      delivery_platforms || [],
       website || null,
       google_maps_url || null,
       JSON.stringify(social_links || {}),

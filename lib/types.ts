@@ -48,6 +48,12 @@ export interface Tenant {
   video_ideas_per_month: number;
   primary_language: string;
   secondary_language: string;
+  sub_category: string | null;
+  neighborhood: string | null;
+  price_positioning: string | null;
+  usp: string | null;
+  marketing_goal: string | null;
+  delivery_platforms: string[];
   status: TenantStatus;
   onboarding_data: Record<string, unknown>;
   api_keys?: ApiKeysJson | null;

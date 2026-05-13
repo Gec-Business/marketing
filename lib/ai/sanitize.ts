@@ -16,17 +16,29 @@ export function sanitizeForPrompt(input: string | undefined | null, maxLength = 
 export function sanitizeTenantForPrompt(tenant: {
   name?: string | null;
   industry?: string | null;
+  sub_category?: string | null;
   city?: string | null;
+  neighborhood?: string | null;
   country?: string | null;
   description?: string | null;
   website?: string | null;
+  price_positioning?: string | null;
+  usp?: string | null;
+  marketing_goal?: string | null;
+  delivery_platforms?: string[];
 }) {
   return {
     name: sanitizeForPrompt(tenant.name, 200),
     industry: sanitizeForPrompt(tenant.industry, 100),
+    sub_category: sanitizeForPrompt(tenant.sub_category, 100),
     city: sanitizeForPrompt(tenant.city, 100),
+    neighborhood: sanitizeForPrompt(tenant.neighborhood, 100),
     country: sanitizeForPrompt(tenant.country, 100),
     description: sanitizeForPrompt(tenant.description, 1000),
     website: sanitizeForPrompt(tenant.website, 200),
+    price_positioning: sanitizeForPrompt(tenant.price_positioning, 50),
+    usp: sanitizeForPrompt(tenant.usp, 300),
+    marketing_goal: sanitizeForPrompt(tenant.marketing_goal, 50),
+    delivery_platforms: (tenant.delivery_platforms || []).map((p) => sanitizeForPrompt(p, 50)),
   };
 }

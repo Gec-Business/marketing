@@ -183,18 +183,21 @@ export default function AssessmentPage({ params }: { params: Promise<{ id: strin
         </div>
       )}
 
-      {assessment.strategy_data && (
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold">Strategy</h2>
-            <RerunButton assessmentId={assessment.id} agentType="strategy" label="Strategy" onComplete={fetchAssessment} />
-          </div>
-          {assessment.strategy_data.parse_error
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold">Strategy</h2>
+          <RerunButton assessmentId={assessment.id} agentType="strategy" label="Strategy" onComplete={fetchAssessment} />
+        </div>
+        {assessment.strategy_data ? (
+          assessment.strategy_data.parse_error
             ? <RawFallback data={assessment.strategy_data} label="Strategy" />
             : <StrategySection data={assessment.strategy_data} assessmentId={assessment.id} onRefresh={fetchAssessment} />
-          }
-        </div>
-      )}
+        ) : (
+          <div className="bg-white rounded-xl p-5 shadow-sm text-gray-400 text-sm">
+            Strategy not generated yet. Click &ldquo;Re-run Strategy&rdquo; to generate it.
+          </div>
+        )}
+      </div>
 
       {assessment.tokens_used > 0 && (
         <div className="text-xs text-gray-400 text-right">
