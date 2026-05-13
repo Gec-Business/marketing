@@ -92,8 +92,8 @@ export async function POST(req: NextRequest) {
     }
 
     const created = await queryOne(
-      `INSERT INTO posts (tenant_id, content_type, platforms, copy_primary, copy_secondary, platform_copies, hashtags, media_urls, video_idea, generated_image_url, scheduled_at, batch_id, sort_order)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      `INSERT INTO posts (tenant_id, content_type, platforms, copy_primary, copy_secondary, platform_copies, hashtags, media_urls, video_idea, visual_description, generated_image_url, scheduled_at, batch_id, sort_order)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING *`,
       [
         tenant_id,
@@ -105,6 +105,7 @@ export async function POST(req: NextRequest) {
         post.hashtags || [],
         generatedImageUrl ? [generatedImageUrl] : [],
         post.video_idea ? JSON.stringify(post.video_idea) : null,
+        post.visual_description || null,
         generatedImageUrl,
         post.suggested_date || null,
         batchId,

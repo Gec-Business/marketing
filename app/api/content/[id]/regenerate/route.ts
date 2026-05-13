@@ -2,21 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireOperator } from '@/lib/auth';
 import { queryOne } from '@/lib/db';
 import { askClaude } from '@/lib/ai/client';
-import { generatePostImage } from '@/lib/images/generator';
+import { generatePostImage, type VisualDirection } from '@/lib/images/generator';
 import { getApiKeysForTenant } from '@/lib/api-keys';
 import { sanitizeForPrompt } from '@/lib/ai/sanitize';
 import { parseAIJson } from '@/lib/ai/parse-json';
 import type { Post } from '@/lib/types';
 
-/**
- * Re-generate a specific component of a post with Tea's feedback.
- * Components: copy_primary, copy_secondary, hashtags, visual_description, video_idea, platform_copies
- * Only the targeted component is regenerated; everything else is preserved.
- */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await requireOperator();
   const { id } = await params;
-  const { component, feedback } = await req.json();
+  const { component, feedback, visual_description: visualDescOverride } = await req.json();
 
   const validComponents = ['copy', 'hashtags', 'visual', 'video', 'platform_copies', 'image'];
   if (!component || !validComponents.includes(component)) {
@@ -109,14 +104,35 @@ Return JSON: { ${post.platforms.map(p => `"${p}": { "primary": "${lang1} text", 
       break;
   }
 
-  // Image generation is separate — no Claude call needed, just DALL-E
+  // Image generation — no Claude call needed, just DALL-E
   if (component === 'image') {
-    const tenant = await queryOne<{ name: string; brand_config: any }>(
-      'SELECT name, brand_config FROM tenants WHERE id = $1', [post.tenant_id]
+    const tenantRow = await queryOne<{ brand_config: any }>(
+      'SELECT brand_config FROM tenants WHERE id = $1', [post.tenant_id]
     );
-    const description = (post as any).visual_description || post.copy_primary?.slice(0, 300) || 'Professional social media post';
+    // Use caller-supplied override → stored description → fallback to copy
+    let description = visualDescOverride?.trim()
+      || (post as any).visual_description
+      || post.copy_primary?.slice(0, 300)
+      || 'Professional social media post';
+
+    // Persist the description if an override was supplied
+    if (visualDescOverride?.trim()) {
+      await queryOne('UPDATE posts SET visual_description = $1 WHERE id = $2', [visualDescOverride.trim(), id]);
+      description = visualDescOverride.trim();
+    }
+
+    // Pull visual_direction from the latest approved assessment
+    const assessment = await queryOne<{ strategy_data: any }>(
+      `SELECT strategy_data FROM assessments WHERE tenant_id = $1 AND (status = 'approved' OR tea_approved = true) ORDER BY created_at DESC LIMIT 1`,
+      [post.tenant_id]
+    );
+    const visualDirection = assessment?.strategy_data?.visual_direction as VisualDirection | undefined;
+
+    if (!apiKeys.openai) {
+      return NextResponse.json({ error: 'No OpenAI key configured' }, { status: 400 });
+    }
     try {
-      const { url } = await generatePostImage(post.tenant_id, description, tenant?.brand_config || {}, apiKeys.openai);
+      const { url } = await generatePostImage(post.tenant_id, description, tenantRow?.brand_config || {}, apiKeys.openai, visualDirection);
       await queryOne('UPDATE posts SET generated_image_url = $1 WHERE id = $2', [url, id]);
       return NextResponse.json({ ok: true, component: 'image', generated_image_url: url });
     } catch (e: any) {
@@ -144,9 +160,8 @@ Return JSON: { ${post.platforms.map(p => `"${p}": { "primary": "${lang1} text", 
         updates.hashtags = Array.isArray(parsed) ? parsed : (parsed.hashtags || post.hashtags);
         break;
       case 'visual':
-        updates.generated_image_url = null; // Clear old image since visual changed
-        // Store in post metadata — visual_description isn't a column, but we can update platform_copies
-        // Actually, visual_description is used during generation, not stored. Let's store feedback as a comment instead.
+        if (parsed.visual_description) updates.visual_description = parsed.visual_description;
+        updates.generated_image_url = null; // Clear old image so Tea regenerates with new prompt
         break;
       case 'video':
         updates.video_idea = parsed;

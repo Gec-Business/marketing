@@ -26,7 +26,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   await requireTenantAccess(post.tenant_id);
 
   const body = await req.json();
-  const allowed = ['copy_primary', 'copy_secondary', 'platform_copies', 'hashtags', 'media_urls', 'scheduled_at', 'content_type', 'platforms', 'video_idea'];
+  const allowed = ['copy_primary', 'copy_secondary', 'platform_copies', 'hashtags', 'media_urls', 'scheduled_at', 'content_type', 'platforms', 'video_idea', 'visual_description', 'generated_image_url'];
   const fields: string[] = [];
   const values: unknown[] = [];
   let idx = 1;
