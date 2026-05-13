@@ -31,6 +31,11 @@ export default function TenantSettingsPage({ params }: { params: Promise<{ id: s
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
+  // Brandbook
+  const [extracting, setExtracting] = useState(false);
+  const [extractedPreview, setExtractedPreview] = useState<any>(null);
+  const brandbookInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => { fetchTenant(); fetchKeyStatus(); }, []);
 
   async function fetchKeyStatus() {
@@ -220,6 +225,24 @@ export default function TenantSettingsPage({ params }: { params: Promise<{ id: s
       alert('Network error.');
     } finally {
       setUploadingLogo(false);
+    }
+  }
+
+  async function uploadBrandbook(file: File) {
+    setExtracting(true);
+    setExtractedPreview(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`/api/tenants/${id}/brandbook`, { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error || 'Extraction failed'); return; }
+      setBrandConfig(data.brand_config);
+      setExtractedPreview(data.extracted);
+    } catch (e) {
+      alert('Network error.');
+    } finally {
+      setExtracting(false);
     }
   }
 
@@ -459,6 +482,60 @@ export default function TenantSettingsPage({ params }: { params: Promise<{ id: s
           className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
           {savingBrand ? 'Saving...' : 'Save Brand Config'}
         </button>
+      </div>
+
+      {/* Brandbook Upload */}
+      <div className="bg-white rounded-xl p-6 shadow-sm max-w-lg mt-6">
+        <h2 className="text-lg font-semibold mb-1">Brandbook</h2>
+        <p className="text-xs text-gray-500 mb-4">
+          Upload the client&apos;s brandbook PDF. Claude will extract colors, fonts, tone of voice, and visual rules and merge them into Brand Config automatically.
+        </p>
+
+        <div className="flex items-center gap-4 mb-4">
+          <button
+            onClick={() => brandbookInputRef.current?.click()}
+            disabled={extracting}
+            className="px-5 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
+          >
+            {extracting ? 'Extracting...' : 'Upload Brandbook PDF'}
+          </button>
+          <p className="text-xs text-gray-400">PDF only, max 32MB.</p>
+          <input
+            ref={brandbookInputRef}
+            type="file"
+            accept="application/pdf"
+            className="hidden"
+            onChange={e => e.target.files?.[0] && uploadBrandbook(e.target.files[0])}
+          />
+        </div>
+
+        {extracting && (
+          <div className="bg-purple-50 rounded-lg p-4 text-sm text-purple-700">
+            Claude is reading the brandbook — this takes 15-30 seconds...
+          </div>
+        )}
+
+        {extractedPreview && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
+            <p className="text-xs font-semibold text-green-800 mb-2">Extracted & saved to Brand Config ✓</p>
+            {extractedPreview.primary_color && (
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded border" style={{ background: extractedPreview.primary_color }} />
+                <span className="text-xs text-gray-600">Primary: {extractedPreview.primary_color}</span>
+                {extractedPreview.secondary_color && <>
+                  <span className="w-4 h-4 rounded border ml-2" style={{ background: extractedPreview.secondary_color }} />
+                  <span className="text-xs text-gray-600">Secondary: {extractedPreview.secondary_color}</span>
+                </>}
+              </div>
+            )}
+            {extractedPreview.font_primary && <p className="text-xs text-gray-600">Font: {extractedPreview.font_primary}{extractedPreview.font_secondary ? ` / ${extractedPreview.font_secondary}` : ''}</p>}
+            {extractedPreview.tagline && <p className="text-xs text-gray-600">Tagline: &ldquo;{extractedPreview.tagline}&rdquo;</p>}
+            {extractedPreview.tone_of_voice && <p className="text-xs text-gray-600">Tone: {extractedPreview.tone_of_voice}</p>}
+            {extractedPreview.dont_use?.length > 0 && (
+              <p className="text-xs text-red-600">Avoid: {extractedPreview.dont_use.slice(0, 3).join(', ')}</p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

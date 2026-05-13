@@ -81,6 +81,7 @@ export async function generateContentBatch(
   const strategy = assessment.strategy_data || {};
   const strategyContext = extractStrategyContext(strategy);
   const vd = (strategy as any).visual_direction || {};
+  const bc = (tenant as any).brand_config || {};
 
   const assets = await query(
     'SELECT id, category, alt_text, original_name, filename, tags FROM assets WHERE tenant_id = $1 ORDER BY uploaded_at DESC',
@@ -94,11 +95,21 @@ export async function generateContentBatch(
 
   const visualInstructions = [
     vd.photography_style ? `Photography style: ${vd.photography_style}` : null,
+    bc.photography_guidelines ? `Brandbook photography rules: ${bc.photography_guidelines}` : null,
     vd.graphic_style ? `Graphic style: ${vd.graphic_style}` : null,
     vd.stop_doing_visually?.length ? `DO NOT use: ${vd.stop_doing_visually.join(', ')}` : null,
+    bc.dont_use?.length ? `Brandbook says avoid: ${bc.dont_use.slice(0, 4).join(', ')}` : null,
     'No text overlays in the scene — DALL-E renders text poorly.',
     'Be specific: describe composition, lighting, subject matter, mood.',
   ].filter(Boolean).join(' ');
+
+  // Brandbook brand voice additions (complement strategy brand_voice)
+  const brandbookVoice = [
+    bc.tone_of_voice ? `Brandbook tone: ${bc.tone_of_voice}` : null,
+    bc.do_use?.length ? `Brandbook says use: ${bc.do_use.slice(0, 4).join(', ')}` : null,
+    bc.tagline ? `Official tagline: "${bc.tagline}"` : null,
+    bc.brand_values?.length ? `Brand values: ${bc.brand_values.join(', ')}` : null,
+  ].filter(Boolean).join('\n');
 
   const systemPrompt = `You are a social media content creator. Generate ${count} posts. Primary language: ${lang}. Secondary language: ${secLang}. Return ONLY a valid JSON array — no markdown, no code fences.`;
 
@@ -117,6 +128,7 @@ Week starting: ${weekStart}
 ${strategyContext || 'No strategy data available — use industry best practices.'}
 --- END STRATEGY ---
 
+${brandbookVoice ? `--- BRANDBOOK ---\n${brandbookVoice}\n--- END BRANDBOOK ---\n` : ''}
 ${assetContext ? `--- ASSETS ---\n${assetContext}\n--- END ASSETS ---\n` : ''}
 
 For each post, generate exactly this JSON shape:

@@ -57,7 +57,17 @@ export async function POST(req: NextRequest) {
 
   const safeCount = Math.min(Math.max(count || tenant.posts_per_week, 1), 30);
   const apiKeys = await getApiKeysForTenant(tenant_id);
-  const visualDirection = (assessment.strategy_data as any)?.visual_direction as VisualDirection | undefined;
+  const strategyVd = (assessment.strategy_data as any)?.visual_direction || {};
+  const bc = (tenant.brand_config as any) || {};
+  const visualDirection: VisualDirection = {
+    photography_style: strategyVd.photography_style || bc.photography_guidelines,
+    graphic_style: strategyVd.graphic_style || bc.visual_style_notes,
+    color_application_guidelines: strategyVd.color_application_guidelines || bc.colors,
+    stop_doing_visually: [
+      ...(strategyVd.stop_doing_visually || []),
+      ...(bc.dont_use || []),
+    ].filter(Boolean),
+  };
   const { posts: generated, tokensUsed } = await generateContentBatch(tenant, assessment, safeCount, week_start, apiKeys.anthropic);
 
   if (generated.length === 0) {

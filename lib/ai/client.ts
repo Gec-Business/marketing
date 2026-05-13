@@ -12,6 +12,38 @@ export function getClaudeClient(apiKey?: string): Anthropic {
   return globalClient;
 }
 
+export async function askClaudeWithPdf(
+  systemPrompt: string,
+  pdfBase64: string,
+  userPrompt: string,
+  options?: { maxTokens?: number; apiKey?: string }
+): Promise<{ text: string; tokensUsed: number }> {
+  const claude = getClaudeClient(options?.apiKey);
+  const response = await claude.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: options?.maxTokens || 4096,
+    system: systemPrompt,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'document',
+            source: { type: 'base64', media_type: 'application/pdf', data: pdfBase64 },
+          } as any,
+          { type: 'text', text: userPrompt },
+        ],
+      },
+    ],
+  });
+  const text = response.content
+    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+    .map(b => b.text)
+    .join('');
+  const tokensUsed = (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0);
+  return { text, tokensUsed };
+}
+
 export async function askClaude(
   systemPrompt: string,
   userPrompt: string,
