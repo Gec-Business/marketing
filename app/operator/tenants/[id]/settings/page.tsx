@@ -490,6 +490,12 @@ export default function TenantSettingsPage({ params }: { params: Promise<{ id: s
               placeholder="e.g. Helvetica Neue, Montserrat" className="w-full px-3 py-2 border rounded-lg text-sm" />
           </div>
           <div>
+            <label className="block text-xs text-gray-500 mb-1">Secondary Font</label>
+            <input type="text" value={brandConfig.font_secondary || ''}
+              onChange={e => setBrandConfig((p: any) => ({ ...p, font_secondary: e.target.value }))}
+              placeholder="e.g. Georgia, Playfair Display" className="w-full px-3 py-2 border rounded-lg text-sm" />
+          </div>
+          <div>
             <label className="block text-xs text-gray-500 mb-1">Tagline</label>
             <input type="text" value={brandConfig.tagline || ''}
               onChange={e => setBrandConfig((p: any) => ({ ...p, tagline: e.target.value }))}
