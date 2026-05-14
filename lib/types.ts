@@ -64,6 +64,7 @@ export interface Tenant {
   billing_day?: number;
   auto_invoice?: boolean;
   auto_reports?: boolean;
+  seasonal_posting?: boolean;
   onboarded_at: string | null;
   created_at: string;
 }

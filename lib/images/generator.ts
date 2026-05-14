@@ -20,12 +20,22 @@ export interface VisualDirection {
   stop_doing_visually?: string[];
 }
 
+type DalleSize = '1024x1024' | '1024x1792' | '1792x1024';
+
+function resolveSize(contentType?: string): { size: DalleSize; formatHint: string } {
+  if (contentType === 'reel' || contentType === 'video') {
+    return { size: '1024x1792', formatHint: 'Vertical 9:16 format, optimized for Stories and Reels.' };
+  }
+  return { size: '1024x1024', formatHint: 'Square 1:1 format, optimized for social media feed.' };
+}
+
 export async function generatePostImage(
   tenantId: string,
   description: string,
   brandConfig: Record<string, unknown>,
   apiKey?: string,
-  visualDirection?: VisualDirection
+  visualDirection?: VisualDirection,
+  contentType?: string
 ): Promise<{ url: string; localPath: string; cost: number }> {
   const openai = getOpenAIClient(apiKey);
 
@@ -45,13 +55,14 @@ export async function generatePostImage(
 
   const avoidGuide = avoidParts.length ? ` Avoid: ${avoidParts.join(', ')}.` : '';
 
-  const prompt = `${description}. ${styleGuide}.${avoidGuide} Square 1:1 format, optimized for social media. No text overlays.`.slice(0, 4000);
+  const { size, formatHint } = resolveSize(contentType);
+  const prompt = `${description}. ${styleGuide}.${avoidGuide} ${formatHint} No text overlays.`.slice(0, 4000);
 
   const response = await openai.images.generate({
     model: 'dall-e-3',
     prompt,
     n: 1,
-    size: '1024x1024',
+    size,
     quality: 'standard',
   });
 

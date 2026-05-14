@@ -132,7 +132,7 @@ Return JSON: { ${post.platforms.map(p => `"${p}": { "primary": "${lang1} text", 
       return NextResponse.json({ error: 'No OpenAI key configured' }, { status: 400 });
     }
     try {
-      const { url } = await generatePostImage(post.tenant_id, description, tenantRow?.brand_config || {}, apiKeys.openai, visualDirection);
+      const { url } = await generatePostImage(post.tenant_id, description, tenantRow?.brand_config || {}, apiKeys.openai, visualDirection, post.content_type);
       await queryOne('UPDATE posts SET generated_image_url = $1 WHERE id = $2', [url, id]);
       return NextResponse.json({ ok: true, component: 'image', generated_image_url: url });
     } catch (e: any) {

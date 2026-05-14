@@ -19,6 +19,7 @@ export default function TenantSettingsPage({ params }: { params: Promise<{ id: s
   const [billingDurationMonths, setBillingDurationMonths] = useState('');
   const [autoInvoice, setAutoInvoice] = useState(true);
   const [autoReports, setAutoReports] = useState(true);
+  const [seasonalPosting, setSeasonalPosting] = useState(false);
   const [savingBilling, setSavingBilling] = useState(false);
   const [keyStatus, setKeyStatus] = useState<{ anthropic_set: boolean; openai_set: boolean }>({ anthropic_set: false, openai_set: false });
   const [anthropicKey, setAnthropicKey] = useState('');
@@ -107,6 +108,7 @@ export default function TenantSettingsPage({ params }: { params: Promise<{ id: s
       setBillingDurationMonths(t.billing_duration_months != null ? String(t.billing_duration_months) : '');
       setAutoInvoice(t.auto_invoice !== false);
       setAutoReports(t.auto_reports !== false);
+      setSeasonalPosting(t.seasonal_posting === true);
       setBrandConfig(t.brand_config || {});
     } catch (e) {
       console.error('Fetch tenant error:', e);
@@ -121,7 +123,7 @@ export default function TenantSettingsPage({ params }: { params: Promise<{ id: s
       const res = await fetch(`/api/tenants/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, city, posts_per_week: postsPerWeek, channels }),
+        body: JSON.stringify({ name, city, posts_per_week: postsPerWeek, channels, seasonal_posting: seasonalPosting }),
       });
       if (!res.ok) { alert('Failed to save'); return; }
       alert('Settings saved.');
@@ -288,6 +290,23 @@ export default function TenantSettingsPage({ params }: { params: Promise<{ id: s
                   {ch}
                 </button>
               ))}
+            </div>
+          </div>
+          <div className="flex items-start gap-3 pt-2">
+            <input
+              id="seasonal"
+              type="checkbox"
+              checked={seasonalPosting}
+              onChange={(e) => setSeasonalPosting(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600"
+            />
+            <div>
+              <label htmlFor="seasonal" className="text-sm font-medium text-gray-700 cursor-pointer">
+                Seasonal posting (Georgian holidays)
+              </label>
+              <p className="text-xs text-gray-500 mt-0.5">
+                When enabled, Claude will include posts tied to upcoming Georgian national holidays and commemorative days.
+              </p>
             </div>
           </div>
         </div>

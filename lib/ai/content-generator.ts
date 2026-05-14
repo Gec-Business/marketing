@@ -4,6 +4,47 @@ import { parseAIJson } from './parse-json';
 import { query } from '../db';
 import type { Tenant, Assessment } from '../types';
 
+const GEORGIAN_HOLIDAYS = [
+  { month: 1,  day: 1,  name: "New Year's Day" },
+  { month: 1,  day: 2,  name: "New Year's Day (cont.)" },
+  { month: 1,  day: 7,  name: "Orthodox Christmas" },
+  { month: 1,  day: 19, name: "Orthodox Epiphany" },
+  { month: 3,  day: 3,  name: "Mother's Day" },
+  { month: 3,  day: 8,  name: "International Women's Day" },
+  { month: 4,  day: 9,  name: "National Unity Day" },
+  { month: 5,  day: 9,  name: "Victory over Fascism / Europe Day" },
+  { month: 5,  day: 12, name: "Saint Andrew the First-Called Day" },
+  { month: 5,  day: 17, name: "Day of Family Purity and Respect for Parents" },
+  { month: 5,  day: 26, name: "Independence Day" },
+  { month: 8,  day: 28, name: "Saint Mary's Day" },
+  { month: 10, day: 14, name: "Svetitskhoveli Cathedral Day" },
+  { month: 11, day: 23, name: "Saint George's Day" },
+];
+
+function getUpcomingHolidays(weekStart: string, windowDays = 14): string[] {
+  const start = new Date(weekStart);
+  const end = new Date(start);
+  end.setDate(end.getDate() + windowDays);
+  const results: string[] = [];
+  for (const year of [start.getFullYear(), start.getFullYear() + 1]) {
+    for (const h of GEORGIAN_HOLIDAYS) {
+      const d = new Date(year, h.month - 1, h.day);
+      if (d >= start && d <= end) {
+        results.push(`${d.toISOString().slice(0, 10)} — ${h.name}`);
+      }
+    }
+  }
+  return results;
+}
+
+function buildApprovalExamples(posts: any[]): string {
+  if (!posts.length) return '';
+  const lines = posts.map((p, i) =>
+    `Example ${i + 1} (${p.content_type}, ${(p.platforms || []).join('/')}):\n  Primary: ${(p.copy_primary || '').slice(0, 200)}\n  Hashtags: ${(p.hashtags || []).slice(0, 5).join(' ')}`
+  );
+  return `PREVIOUSLY APPROVED POSTS (match this tone and style):\n${lines.join('\n\n')}`;
+}
+
 function extractStrategyContext(strategy: any): string {
   if (!strategy || strategy.parse_error) return '';
 
@@ -83,11 +124,22 @@ export async function generateContentBatch(
   const vd = (strategy as any).visual_direction || {};
   const bc = (tenant as any).brand_config || {};
 
-  const assets = await query(
-    'SELECT id, category, alt_text, original_name, filename, tags FROM assets WHERE tenant_id = $1 ORDER BY uploaded_at DESC',
-    [tenant.id]
-  ) as any[];
+  const [assets, approvedPosts] = await Promise.all([
+    query(
+      'SELECT id, category, alt_text, original_name, filename, tags FROM assets WHERE tenant_id = $1 ORDER BY uploaded_at DESC',
+      [tenant.id]
+    ) as Promise<any[]>,
+    query(
+      `SELECT content_type, platforms, copy_primary, hashtags FROM posts WHERE tenant_id = $1 AND status = 'approved' ORDER BY updated_at DESC LIMIT 3`,
+      [tenant.id]
+    ) as Promise<any[]>,
+  ]);
   const assetContext = buildAssetContext(assets);
+  const approvalContext = buildApprovalExamples(approvedPosts);
+
+  const upcomingHolidays = tenant.seasonal_posting
+    ? getUpcomingHolidays(weekStart)
+    : [];
 
   const lang = tenant.primary_language === 'ka' ? 'Georgian' : 'English';
   const secLang = tenant.secondary_language === 'ka' ? 'Georgian' : tenant.secondary_language === 'ru' ? 'Russian' : 'English';
@@ -130,6 +182,8 @@ ${strategyContext || 'No strategy data available — use industry best practices
 
 ${brandbookVoice ? `--- BRANDBOOK ---\n${brandbookVoice}\n--- END BRANDBOOK ---\n` : ''}
 ${assetContext ? `--- ASSETS ---\n${assetContext}\n--- END ASSETS ---\n` : ''}
+${approvalContext ? `--- APPROVED EXAMPLES ---\n${approvalContext}\n--- END APPROVED EXAMPLES ---\n` : ''}
+${upcomingHolidays.length ? `--- UPCOMING GEORGIAN HOLIDAYS (in the next 14 days) ---\n${upcomingHolidays.join('\n')}\nCreate at least one post that connects the business to a relevant upcoming holiday. Keep it natural, not forced.\n--- END HOLIDAYS ---\n` : ''}
 
 For each post, generate exactly this JSON shape:
 {

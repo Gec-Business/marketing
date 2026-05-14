@@ -87,12 +87,13 @@ export async function POST(req: NextRequest) {
       if (asset) generatedImageUrl = asset.url;
     }
 
-    if (!generatedImageUrl && generate_images && post.visual_description && post.content_type === 'image_post') {
+    const needsImage = ['image_post', 'carousel', 'reel', 'video'].includes(post.content_type);
+    if (!generatedImageUrl && generate_images && post.visual_description && needsImage) {
       if (!apiKeys.openai) {
         console.warn('Skipping image generation: no OpenAI API key configured (tenant/operator/global all empty)');
       } else {
         try {
-          const { url } = await generatePostImage(tenant_id, post.visual_description, tenant.brand_config, apiKeys.openai, visualDirection);
+          const { url } = await generatePostImage(tenant_id, post.visual_description, tenant.brand_config, apiKeys.openai, visualDirection, post.content_type);
           generatedImageUrl = url;
           imagesGenerated++;
         } catch (e) {
