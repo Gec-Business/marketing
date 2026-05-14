@@ -130,7 +130,7 @@ export async function generateContentBatch(
       [tenant.id]
     ) as Promise<any[]>,
     query(
-      `SELECT content_type, platforms, copy_primary, hashtags FROM posts WHERE tenant_id = $1 AND status = 'approved' ORDER BY updated_at DESC LIMIT 3`,
+      `SELECT content_type, platforms, copy_primary, hashtags FROM posts WHERE tenant_id = $1 AND status IN ('tea_approved','tenant_approved','posted','partially_posted') ORDER BY updated_at DESC LIMIT 3`,
       [tenant.id]
     ) as Promise<any[]>,
   ]);
