@@ -45,6 +45,17 @@ export default function AlertsWidget() {
     } catch {}
   }
 
+  async function resolveAll() {
+    try {
+      await fetch('/api/system/alerts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ all: true }),
+      });
+      fetchAlerts();
+    } catch {}
+  }
+
   if (loading) return null;
 
   const total = (counts.critical || 0) + (counts.error || 0) + (counts.warning || 0);
@@ -53,11 +64,16 @@ export default function AlertsWidget() {
     <div className="bg-white rounded-xl p-5 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold">System Alerts</h3>
-        <div className="flex gap-2 text-xs">
+        <div className="flex items-center gap-2 text-xs">
           {counts.critical > 0 && <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full">{counts.critical} critical</span>}
           {counts.error > 0 && <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full">{counts.error} error</span>}
           {counts.warning > 0 && <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full">{counts.warning} warn</span>}
-          {total === 0 && <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full">All systems healthy</span>}
+          {total === 0 && <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full">All clear</span>}
+          {total > 0 && (
+            <button onClick={resolveAll} className="px-2 py-0.5 text-gray-400 hover:text-gray-700 border border-gray-200 rounded-full">
+              Dismiss all
+            </button>
+          )}
         </div>
       </div>
 

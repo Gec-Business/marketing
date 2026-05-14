@@ -34,22 +34,22 @@ export default function ConnectPage({ params }: { params: Promise<{ id: string }
   }
 
   function connectPlatform(platform: string) {
-    const url = platform === 'facebook'
-      ? `/api/connect/facebook?tenant_id=${id}`
+    const returnTo = `/operator/tenants/${id}/connect?connected=${platform}`;
+    const base = platform === 'facebook'
+      ? `/api/connect/facebook`
       : platform === 'linkedin'
-      ? `/api/connect/linkedin?tenant_id=${id}`
-      : `/api/connect/tiktok?tenant_id=${id}`;
-
-    const popup = window.open(url, '_blank', 'width=600,height=700');
-
-    // Refresh connections when popup closes
-    const timer = setInterval(() => {
-      if (popup?.closed) {
-        clearInterval(timer);
-        fetchConnections();
-      }
-    }, 1000);
+      ? `/api/connect/linkedin`
+      : `/api/connect/tiktok`;
+    window.location.href = `${base}?tenant_id=${id}&return_to=${encodeURIComponent(returnTo)}`;
   }
+
+  // Refresh connections list if returning from a successful OAuth
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('connected')) fetchConnections();
+    }
+  }, []);
 
   return (
     <div>

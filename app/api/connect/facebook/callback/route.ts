@@ -4,24 +4,29 @@ import crypto from 'crypto';
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code');
-  const state = req.nextUrl.searchParams.get('state');
+  const stateRaw = req.nextUrl.searchParams.get('state');
+  const state = stateRaw ? decodeURIComponent(stateRaw) : null;
   const error = req.nextUrl.searchParams.get('error');
   const errorDesc = req.nextUrl.searchParams.get('error_description');
+  console.log('[FB Callback] state raw:', stateRaw, '→ decoded:', state, '| code present:', !!code);
 
   if (error) {
     return new NextResponse(`<html><body><h2>Facebook Error</h2><p>${error}: ${errorDesc}</p></body></html>`, { headers: { 'Content-Type': 'text/html' } });
   }
 
-  const savedState = state ? await queryOne<{ tenant_id: string }>(
-    `DELETE FROM oauth_states WHERE state = $1 AND platform = 'facebook' AND expires_at > now() RETURNING tenant_id`,
+  const savedState = state ? await queryOne<{ tenant_id: string; return_to: string | null }>(
+    `DELETE FROM oauth_states WHERE state = $1 AND platform = 'facebook' AND expires_at > now() RETURNING tenant_id, return_to`,
     [state]
   ) : null;
+  console.log('[FB Callback] savedState:', savedState, '| code present:', !!code);
 
   if (!code || !savedState) {
+    console.error('[FB Callback] Failed — code:', !!code, 'savedState:', !!savedState, 'state value:', state);
     return new NextResponse('<html><body><h2>Authorization failed</h2><p>Invalid or expired state. Please try again.</p></body></html>', { headers: { 'Content-Type': 'text/html' } });
   }
 
   const tenantId = savedState.tenant_id;
+  const returnTo = savedState.return_to || `/operator/tenants/${tenantId}/connect`;
   const appId = process.env.META_APP_ID;
   const appSecret = process.env.META_APP_SECRET;
   const redirectUri = `${process.env.APP_URL}/api/connect/facebook/callback`;
@@ -73,8 +78,7 @@ export async function GET(req: NextRequest) {
           body: JSON.stringify({ token: '${token}', page_id: pageId })
         });
         if (res.ok) {
-          document.body.innerHTML = '<div style="font-family:-apple-system,sans-serif;text-align:center;padding:60px 20px;"><h2 style="color:#16a34a;">✓ Connected!</h2><p style="color:#6b7280;">Facebook Page connected successfully.</p></div>';
-          setTimeout(() => window.close(), 2000);
+          window.location.href = '${returnTo}';
         } else {
           document.getElementById('status').textContent = 'Error. Please try again.';
         }

@@ -11,8 +11,8 @@ export async function GET(req: NextRequest) {
     return new NextResponse(`<html><body><h2>LinkedIn Error</h2><p>${error}: ${errorDesc}</p></body></html>`, { headers: { 'Content-Type': 'text/html' } });
   }
 
-  const savedState = state ? await queryOne<{ tenant_id: string }>(
-    `DELETE FROM oauth_states WHERE state = $1 AND platform = 'linkedin' AND expires_at > now() RETURNING tenant_id`,
+  const savedState = state ? await queryOne<{ tenant_id: string; return_to: string | null }>(
+    `DELETE FROM oauth_states WHERE state = $1 AND platform = 'linkedin' AND expires_at > now() RETURNING tenant_id, return_to`,
     [state]
   ) : null;
 
@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
   }
 
   const tenantId = savedState.tenant_id;
+  const returnTo = savedState.return_to || `/operator/tenants/${tenantId}/connect`;
 
   const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
     method: 'POST',
@@ -62,8 +63,5 @@ export async function GET(req: NextRequest) {
     ]
   );
 
-  return new NextResponse(
-    '<html><body><h2>LinkedIn Connected!</h2><script>setTimeout(() => window.close(), 3000);</script></body></html>',
-    { headers: { 'Content-Type': 'text/html' } }
-  );
+  return NextResponse.redirect(new URL(returnTo, process.env.APP_URL));
 }

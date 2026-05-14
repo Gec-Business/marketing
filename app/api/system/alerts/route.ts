@@ -34,12 +34,16 @@ export async function GET() {
 }
 
 /**
- * Manually resolve an alert.
+ * Resolve a single alert (id) or all unresolved alerts (all: true).
  */
 export async function PATCH(req: NextRequest) {
   await requireOperator();
-  const { id } = await req.json();
-  if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+  const { id, all } = await req.json();
+  if (all) {
+    await query(`UPDATE system_health SET resolved = true, resolved_at = now() WHERE resolved = false`);
+    return NextResponse.json({ ok: true });
+  }
+  if (!id) return NextResponse.json({ error: 'id or all required' }, { status: 400 });
   await query(`UPDATE system_health SET resolved = true, resolved_at = now() WHERE id = $1`, [id]);
   return NextResponse.json({ ok: true });
 }
