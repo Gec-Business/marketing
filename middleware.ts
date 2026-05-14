@@ -40,6 +40,7 @@ export async function middleware(req: NextRequest) {
     path === '/api/data-deletion' || path.startsWith('/api/data-deletion/') ||
     path === '/api/connect/facebook/callback' ||
     path === '/api/connect/facebook/select-page' ||
+    path === '/api/connect/instagram/callback' ||
     path === '/api/connect/linkedin/callback' ||
     path === '/api/connect/tiktok/callback';
 

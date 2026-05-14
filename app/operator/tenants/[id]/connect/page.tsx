@@ -4,7 +4,8 @@ import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 
 const PLATFORMS = [
-  { id: 'facebook', label: 'Facebook + Instagram', color: '#1877F2', desc: 'Connects both Facebook Page and Instagram Business', connectsAlso: 'instagram' },
+  { id: 'facebook', label: 'Facebook', color: '#1877F2', desc: 'Facebook Page posting', connectsAlso: null },
+  { id: 'instagram', label: 'Instagram', color: '#E1306C', desc: 'Instagram Business account posting', connectsAlso: null },
   { id: 'linkedin', label: 'LinkedIn', color: '#0A66C2', desc: 'Company page posting', connectsAlso: null },
   { id: 'tiktok', label: 'TikTok', color: '#000000', desc: 'Video and photo posting', connectsAlso: null },
 ];
@@ -37,6 +38,8 @@ export default function ConnectPage({ params }: { params: Promise<{ id: string }
     const returnTo = `/operator/tenants/${id}/connect?connected=${platform}`;
     const base = platform === 'facebook'
       ? `/api/connect/facebook`
+      : platform === 'instagram'
+      ? `/api/connect/instagram`
       : platform === 'linkedin'
       ? `/api/connect/linkedin`
       : `/api/connect/tiktok`;
@@ -81,10 +84,15 @@ export default function ConnectPage({ params }: { params: Promise<{ id: string }
                 </div>
                 <p className="text-sm text-gray-500">{p.desc}</p>
                 {conn?.page_name && (
-                  <p className="text-xs text-blue-600 mt-1">📄 {conn.page_name}</p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    {p.id === 'instagram' ? '📸' : '📄'} {conn.page_name}
+                  </p>
                 )}
                 {conn?.connected_at && (
                   <p className="text-xs text-gray-400 mt-1">Connected: {new Date(conn.connected_at).toLocaleDateString()}</p>
+                )}
+                {isExpired && conn?.expires_at && (
+                  <p className="text-xs text-red-400 mt-1">Expired: {new Date(conn.expires_at).toLocaleDateString()}</p>
                 )}
               </div>
               <button
@@ -103,7 +111,7 @@ export default function ConnectPage({ params }: { params: Promise<{ id: string }
       </div>
 
       <p className="text-xs text-gray-400 mt-6">
-        After clicking Connect, log in with the client&apos;s account and grant permissions. The window will close automatically.
+        After clicking Connect, log in with the client&apos;s account and grant the requested permissions.
       </p>
     </div>
   );

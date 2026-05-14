@@ -11,15 +11,14 @@ export async function GET(req: NextRequest) {
 
   const state = `${tenantId}:${crypto.randomUUID()}`;
   await query(
-    `INSERT INTO oauth_states (state, tenant_id, platform, return_to) VALUES ($1, $2, 'facebook', $3)`,
+    `INSERT INTO oauth_states (state, tenant_id, platform, return_to) VALUES ($1, $2, 'instagram', $3)`,
     [state, tenantId, returnTo]
   );
-  console.log('[FB OAuth] Inserted state:', state);
 
   const appId = process.env.META_APP_ID;
-  const redirectUri = `${process.env.APP_URL}/api/connect/facebook/callback`;
-  const scopes = 'pages_show_list,pages_manage_posts,pages_read_engagement';
-  const authUrl = `https://www.facebook.com/v25.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&state=${encodeURIComponent(state)}&response_type=code`;
+  const redirectUri = `${process.env.APP_URL}/api/connect/instagram/callback`;
+  const scopes = 'instagram_business_basic,instagram_business_content_publish,instagram_business_manage_messages,instagram_manage_comments';
+  const authUrl = `https://www.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&response_type=code&state=${encodeURIComponent(state)}`;
 
   return NextResponse.redirect(authUrl);
 }
